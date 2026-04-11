@@ -1,6 +1,6 @@
-# Career-Ops Web Dashboard — User Guide
+# Web dashboard user guide (career-ops)
 
-A step-by-step guide to using the browser-based career-ops dashboard. This covers setup, the full evaluation workflow, portal scanning, pipeline processing, and pipeline maintenance utilities.
+A step-by-step guide to the browser-based **career-ops** dashboard (this fork’s UI is titled **Jessica’s Job Tracker** in the header, with the subtitle *Local dashboard*). The app binds to **localhost** only, reads and writes the same files as the CLI, and covers setup, evaluation, scanning, pipeline processing, report review (including in-app PDF viewing), and chat-based modes.
 
 ---
 
@@ -76,32 +76,42 @@ You only need to do this once.
 
 ## 2. Starting the Dashboard
 
-You need **two terminal windows**, both starting from the `web/` directory.
+**Recommended — one terminal (API + UI together):**
 
-**Terminal 1 — API server:**
+From the `web/` directory:
+
 ```powershell
 cd web
-npm run dev:api
-```
-You should see:
-```
-career-ops web API listening on http://127.0.0.1:8787
-ANTHROPIC_API_KEY: configured
-ANTHROPIC_MODEL: claude-sonnet-4-6
-```
-
-**Terminal 2 — UI dev server:**
-```powershell
-cd web\ui
 npm run dev
 ```
-You should see:
+
+This runs **`concurrently`**: the Express API (`tsx watch server/src/index.ts`) and the Vite UI (`npm --prefix ui run dev`). You should see the API line:
+
 ```
-VITE v6.x.x  ready in XXXms
+career-ops web API listening on http://127.0.0.1:8787
+```
+
+…and Vite reporting something like:
+
+```
 ➜  Local:   http://localhost:5173/
 ```
 
-**Open your browser** and go to **http://localhost:5173/**
+(If **5173** is busy, Vite picks the next free port and prints it.)
+
+**Alternative — two terminals** (same result, split processes):
+
+```powershell
+# Terminal 1
+cd web
+npm run dev:api
+
+# Terminal 2
+cd web\ui
+npm run dev
+```
+
+**Open your browser** at the URL Vite prints (usually **http://localhost:5173/**).
 
 ---
 
