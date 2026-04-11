@@ -35,3 +35,7 @@ node_modules/
 .claude/settings.local.json
 .claude/memory/
 career-dashboard
+dashboard/*.exe
+
+# Web dashboard secrets (copy from web/.env.example)
+web/.env

@@ -1,0 +1,621 @@
+# Career-Ops Web Dashboard — User Guide
+
+A step-by-step guide to using the browser-based career-ops dashboard. This covers setup, the full evaluation workflow, portal scanning, pipeline processing, and pipeline maintenance utilities.
+
+---
+
+## Table of Contents
+
+1. [Setup](#1-setup)
+2. [Starting the Dashboard](#2-starting-the-dashboard)
+3. [Dashboard Layout](#3-dashboard-layout)
+4. [Workflow 1 — Evaluate a Single Job](#4-workflow-1--evaluate-a-single-job)
+5. [Workflow 2 — Scan Portals for New Jobs](#5-workflow-2--scan-portals-for-new-jobs)
+6. [Workflow 3 — Process the Pipeline](#6-workflow-3--process-the-pipeline)
+7. [Workflow 4 — Review a Report](#7-workflow-4--review-a-report)
+8. [Workflow 5 — Update Application Status](#8-workflow-5--update-application-status)
+9. [Workflow 6 — Pipeline Maintenance](#9-workflow-6--pipeline-maintenance)
+10. [Workflow 7 — AI Chat (Conversational Modes)](#10-workflow-7--ai-chat-conversational-modes)
+11. [Where Your Data Lives](#11-where-your-data-lives)
+12. [Typical End-to-End Session](#12-typical-end-to-end-session)
+13. [Troubleshooting](#13-troubleshooting)
+14. [Feature Reference](#14-feature-reference)
+
+---
+
+## 1. Setup
+
+You only need to do this once.
+
+### Prerequisites
+
+- **Node.js 18+** installed
+- **Playwright Chromium** installed at the repo root (`npx playwright install chromium`)
+- **Anthropic API key** (get one at [console.anthropic.com](https://console.anthropic.com/))
+
+### Step-by-step
+
+1. Open a terminal in the repo root (`career-ops/`)
+
+2. Navigate to the web directory and create your `.env` file:
+   ```powershell
+   cd web
+   copy .env.example .env
+   ```
+
+3. Open `web/.env` in a text editor and paste your Anthropic API key:
+   ```
+   ANTHROPIC_API_KEY=sk-ant-api03-your-key-here
+   ANTHROPIC_MODEL=claude-sonnet-4-6
+   HOST=127.0.0.1
+   PORT=8787
+   ```
+
+4. Install dependencies (run from the `web/` directory):
+   ```powershell
+   npm install
+   npm --prefix ui install
+   ```
+
+5. Make sure your profile is configured. These files should exist in the repo root:
+   - `cv.md` — your CV in markdown
+   - `config/profile.yml` — your name, location, target roles, comp range
+   - `portals.yml` — companies and search keywords for the scanner
+   - `modes/_profile.md` — your personalization overrides
+
+   If any are missing, copy from the templates:
+   ```powershell
+   cd ..
+   copy config\profile.example.yml config\profile.yml
+   copy templates\portals.example.yml portals.yml
+   copy modes\_profile.template.md modes\_profile.md
+   ```
+   Then edit each file with your details.
+
+---
+
+## 2. Starting the Dashboard
+
+You need **two terminal windows**, both starting from the `web/` directory.
+
+**Terminal 1 — API server:**
+```powershell
+cd web
+npm run dev:api
+```
+You should see:
+```
+career-ops web API listening on http://127.0.0.1:8787
+ANTHROPIC_API_KEY: configured
+ANTHROPIC_MODEL: claude-sonnet-4-6
+```
+
+**Terminal 2 — UI dev server:**
+```powershell
+cd web\ui
+npm run dev
+```
+You should see:
+```
+VITE v6.x.x  ready in XXXms
+➜  Local:   http://localhost:5173/
+```
+
+**Open your browser** and go to **http://localhost:5173/**
+
+---
+
+## 3. Dashboard Layout
+
+The dashboard has four views, accessible via the top-right navigation bar:
+
+| Tab | Purpose |
+|-----|---------|
+| **Pipeline** | Your main workspace. Shows all tracked applications in a table with search, filter, and action buttons. |
+| **Evaluate** | Submit a new job listing for AI evaluation. |
+| **Chat** | Conversational AI assistant with 7 specialized modes (compare offers, outreach, research, and more). |
+| **Report** | Read a full evaluation report (opens when you click "View report" on a row). |
+
+### Pipeline View toolbar
+
+The Pipeline view has a toolbar at the top with:
+
+- **Search box** — type to filter by company, role, or notes
+- **Refresh** button — reload data from `applications.md`
+- **Scan** button — start scanning configured portals for new job listings
+- **Process pipeline** button — evaluate pending URLs from your pipeline
+- **Merge tracker** button — merge any pending evaluation results into your tracker
+- **Status dropdown** — filter the table by application status (All, Evaluated, Applied, etc.)
+
+### Floating Job Progress Bar
+
+When any background job is running (evaluation, scan, pipeline processing, scripts), a **progress bar appears fixed at the bottom** of the screen. It shows:
+
+- Job ID and state (queued / running / succeeded / failed)
+- Current step and detail (e.g., "Extracting JD from URL")
+- A pulsing dot while polling
+- **Show logs** / **Hide logs** toggle to see raw output
+- **Dismiss** button (appears when the job finishes)
+
+This bar is visible on every tab, so you can navigate freely while a job runs.
+
+---
+
+## 4. Workflow 1 — Evaluate a Single Job
+
+This is the core workflow. You found a job listing and want career-ops to evaluate how well it fits you.
+
+### Steps
+
+1. Click the **Evaluate** tab in the top navigation
+
+2. You have two options:
+   - **Paste a URL** into the "Job URL" field — the system will navigate to it with Playwright and extract the job description automatically
+   - **Paste the JD text** directly into the textarea — use this if the URL is behind a login or paywall
+
+3. Click **Start evaluation**
+
+4. The **floating progress bar** appears at the bottom. Watch the steps:
+   - *Loading context* — reads your CV, profile, and mode files
+   - *Extracting JD from URL* — Playwright visits the page (if URL provided)
+   - *Generating A–F evaluation* — the AI evaluates fit across 10 dimensions
+   - *Writing report* — saves the markdown report to `reports/`
+   - *Writing tracker addition TSV* — creates a tracker entry
+   - *Merging tracker* — runs `merge-tracker.mjs` to add the entry to `applications.md`
+   - *Generating PDF content (LLM)* — the AI generates a tailored CV
+   - *Rendering PDF (Playwright)* — converts the HTML to a PDF in `output/`
+   - *Done*
+
+5. Once done, click **Dismiss** on the progress bar
+
+6. Switch to the **Pipeline** tab — your new entry appears in the table
+
+### What gets created
+
+| File | Location | Description |
+|------|----------|-------------|
+| Evaluation report | `reports/001-company-slug-YYYY-MM-DD.md` | Full A–F scoring with fit analysis, gaps, interview prep, negotiation notes |
+| Tailored PDF | `output/cv-company-slug-001.pdf` | ATS-optimized resume customized for this specific role |
+| Tracker entry | `data/applications.md` | Row added with score, status, report link |
+
+### The evaluation report includes
+
+- **Role summary** — what the company is looking for
+- **CV match analysis** — how your experience maps to requirements
+- **Gap analysis** — what's missing and how to address it
+- **Compensation research** — market data and negotiation framing
+- **Personalization** — how to position your narrative for this role
+- **Interview prep** — STAR+R stories tailored to likely questions
+- **Overall score** — weighted 0–5 across 10 dimensions
+
+---
+
+## 5. Workflow 2 — Scan Portals for New Jobs
+
+The scanner visits career pages of companies you've configured in `portals.yml` and finds new job listings matching your target roles.
+
+### Steps
+
+1. Make sure `portals.yml` exists in the repo root and has at least some companies configured (the template includes 45+ pre-configured companies)
+
+2. From the **Pipeline** tab, click the **Scan** button
+
+3. Watch the progress bar — it will show each company being scanned:
+   - *Reading portals.yml*
+   - *Launching browser*
+   - *Scanning [Company Name]* — for each configured company
+   - *Writing pipeline + scan history*
+
+4. When finished, new job URLs are added to `data/pipeline.md` (under "## Pending") and logged in `data/scan-history.tsv` for deduplication
+
+5. The scan does **not** auto-evaluate. To evaluate the discovered jobs, use **Process pipeline** (next workflow)
+
+### How filtering works
+
+In `portals.yml`, the `title_filter` section controls what gets picked up:
+
+```yaml
+title_filter:
+  positive:
+    - enablement
+    - sales enablement
+    - revenue enablement
+  negative:
+    - intern
+    - junior
+    - coordinator
+```
+
+- **Positive** — job title must contain at least one of these keywords
+- **Negative** — job title must NOT contain any of these keywords
+
+### Adding companies
+
+Edit `portals.yml` and add entries under `tracked_companies`:
+
+```yaml
+tracked_companies:
+  - name: Acme Corp
+    careers_url: https://acme.com/careers
+    enabled: true
+```
+
+---
+
+## 6. Workflow 3 — Process the Pipeline
+
+After scanning, your `data/pipeline.md` will have pending URLs. "Process pipeline" evaluates them one by one (up to 5 at a time).
+
+### Steps
+
+1. From the **Pipeline** tab, click **Process pipeline**
+
+2. The system reads `data/pipeline.md`, finds unchecked entries (`- [ ] https://...`), and evaluates each one sequentially
+
+3. For each URL, it runs the full evaluation workflow (same as Workflow 1): extract JD → evaluate → write report → merge tracker → generate PDF
+
+4. Watch progress in the floating bar at the bottom
+
+5. When done, click **Dismiss** and then **Refresh** to see all new entries in the table
+
+---
+
+## 7. Workflow 4 — Review a Report
+
+Reports are rendered as a rich, structured dashboard — not raw markdown.
+
+### Steps
+
+1. On the **Pipeline** tab, find the row you want to review
+
+2. Click the **View report** button (the gradient-colored button in the Actions column)
+
+3. The view switches to the **Report** tab. The layout has three areas:
+
+#### Executive Summary Header (always visible)
+   - **Score ring** — animated circular gauge showing the overall score out of 5
+   - **Company & role** — title, archetype badge, date, link to original posting
+   - **TL;DR** — one-sentence summary of the role
+   - **Recommendation badge** — color-coded decision guidance:
+     - Green: "Recommended — Apply" (4.5+)
+     - Amber: "Worth pursuing — review gaps" (4.0–4.4)
+     - Blue: "Worth considering — significant gaps" (3.5–3.9)
+     - Gray: "Weak fit — not recommended" (below 3.5)
+   - **Dimension scores** — individual score bars for Match, North Star, Comp, and Culture
+
+#### Collapsible Sections (click to expand/collapse)
+   - **Role Snapshot** — key dimensions in a card grid (archetype, domain, function, seniority, remote, team size, comp)
+   - **Requirements Match** — each JD requirement shown as a card with a color-coded strength chip (Strong/Moderate/Gap/Mitigable) and supporting evidence
+   - **Gaps & Mitigation** — each gap with severity badge, adjacent experience, and a highlighted mitigation suggestion
+   - **Compensation & Market** — market data cards with assessment and negotiation notes
+   - **Level & Strategy** — verdict on level fit and strategy tips
+   - **Personalization Plan** — numbered CV and LinkedIn change recommendations
+   - **Interview Prep** — expandable STAR+R story cards with S/T/A/R/Reflection breakdowns, recommended case study, and red-flag Q&A
+   - **Full Analysis** — the complete markdown report, toggleable between rendered and raw views
+
+#### Sticky Action Rail (large screens)
+   - "Back to pipeline" button
+   - Link to the original job posting
+   - Quick stats summary (overall score, strong matches, gaps, story count, comp score)
+   - Report file path
+
+4. Expand sections as needed. Start with the **Executive Summary** for a quick decision, then drill into specific sections for detail.
+
+5. Click **Back to pipeline** (sidebar or browser back) to return to the table.
+
+### Opening the original job listing
+
+If the evaluation included a URL, the **View posting →** link appears in the executive header and sidebar. Click it to open the original listing in a new tab.
+
+---
+
+## 8. Workflow 5 — Update Application Status
+
+As you progress through your job search, update statuses to keep your pipeline organized.
+
+### Steps
+
+1. On the **Pipeline** tab, find the row you want to update
+
+2. Click the **Status dropdown** in that row
+
+3. Select the new status:
+
+| Status | When to use |
+|--------|-------------|
+| **Evaluated** | Report completed, haven't decided yet |
+| **Applied** | You submitted the application |
+| **Responded** | Company responded to your application |
+| **Interview** | You're in the interview process |
+| **Offer** | You received an offer |
+| **Rejected** | Company rejected you |
+| **Discarded** | You decided not to pursue this one |
+| **SKIP** | Doesn't fit, don't apply |
+
+4. The change saves immediately to `data/applications.md`
+
+### Filtering by status
+
+Use the **Status** dropdown in the toolbar to show only applications with a specific status. Select "All" to see everything.
+
+---
+
+## 9. Workflow 6 — Pipeline Maintenance
+
+These utilities keep your tracker data clean and consistent.
+
+### Merge tracker
+
+Click **Merge tracker** on the Pipeline tab. This runs `merge-tracker.mjs`, which:
+- Reads any pending TSV files from `batch/tracker-additions/`
+- Deduplicates against existing entries in `applications.md`
+- Merges new entries into the tracker
+- Moves processed TSVs to `batch/tracker-additions/merged/`
+
+This runs automatically after every evaluation, but you can trigger it manually if needed.
+
+### Other maintenance scripts
+
+These are available via the API but can be run from the terminal:
+
+```powershell
+# From the repo root:
+
+# Verify pipeline integrity (checks for broken links, bad formats, non-canonical statuses)
+node verify-pipeline.mjs
+
+# Remove duplicate entries (keeps highest-scored version)
+node dedup-tracker.mjs
+
+# Normalize all statuses to canonical values
+node normalize-statuses.mjs
+```
+
+---
+
+## 10. Workflow 7 — AI Chat (Conversational Modes)
+
+The **Chat** tab gives you a streaming AI assistant that has your full career context loaded (CV, profile, archetypes, proof points). It supports 7 specialized modes for different tasks.
+
+### How to use
+
+1. Click the **Chat** tab in the top navigation
+2. Select a **mode** from the dropdown at the top left
+3. Type your message and press **Enter** (or click **Send**)
+4. The AI response streams in token-by-token with markdown formatting
+5. Continue the conversation as long as needed (up to 50 messages)
+6. Click **Clear chat** or switch modes to start fresh
+
+### Available modes
+
+#### General (free-form)
+Open-ended career advice using your full profile context.
+
+**Example prompts:**
+- "What roles am I best suited for right now?"
+- "What are my biggest gaps for VP-level enablement roles?"
+- "Summarize my top 3 strengths based on my CV"
+
+#### Compare Offers (`ofertas`)
+Compare multiple evaluated offers using a 10-dimension weighted scoring matrix.
+
+**Example prompts:**
+- "Compare offers #001 and #003 — which should I prioritize?"
+- "Rank my top 3 evaluated offers by overall fit"
+- "Which of my evaluated roles has the best comp trajectory?"
+
+**Tip:** Reference offers by their report number (e.g., #001) so the AI can look them up.
+
+#### LinkedIn Outreach (`contacto`)
+Generate targeted LinkedIn connection messages using a 3-sentence framework: Hook (specific to the company), Proof (your strongest relevant achievement), Proposal (low-pressure ask).
+
+**Example prompts:**
+- "Write a LinkedIn message for the hiring manager at Anthropic for a Sales Enablement role"
+- "Draft an outreach message for a VP of Enablement opening at Salesforce"
+- "I want to connect with someone on the team at Vericast — help me write the message"
+
+**Rules the AI follows:** Max 300 characters (LinkedIn limit), no corporate-speak, no "I'm passionate about...", no phone numbers.
+
+#### Company Research (`deep`)
+Deep research prompt covering 6 axes: AI strategy, recent moves, engineering culture, challenges, competitors, and your angle.
+
+**Example prompts:**
+- "Do a deep dive on Vericast — I have an interview coming up"
+- "Research Salesforce's enablement org and AI strategy"
+- "What should I know about [Company] before my interview next week?"
+
+#### Evaluate Training (`training`)
+Evaluate whether a course, certification, or training program is worth your time using 6 dimensions: North Star alignment, recruiter signal, effort, opportunity cost, risks, and portfolio deliverable.
+
+**Example prompts:**
+- "Should I get the Salesforce Sales Cloud certification?"
+- "Is the HubSpot Revenue Operations cert worth it for my target roles?"
+- "Evaluate the value of taking a public speaking course"
+
+**Verdicts:** The AI will recommend TAKE IT, SKIP, or TAKE WITH TIMEBOX with a concrete plan.
+
+#### Evaluate Project (`project`)
+Score a portfolio project idea on 6 dimensions: signal for target roles, uniqueness, demo-ability, metrics potential, time to MVP, and STAR story potential.
+
+**Example prompts:**
+- "Evaluate a project idea: an AI-powered enablement content recommender"
+- "Should I build an ROI calculator for sales training programs?"
+- "Score this project idea: automated onboarding assessment tool"
+
+**Verdicts:** BUILD (with weekly milestones), SKIP (with alternative suggestion), or PIVOT TO [better variant].
+
+#### Application Helper (`apply`)
+Generate personalized answers for application form questions using your CV and evaluation context.
+
+**Example prompts:**
+- "Help me answer these application questions: Why are you interested in this role? What's your greatest strength? Tell us about a time you led a cross-functional project."
+- "The application asks for my salary expectation — what should I put for a VP Enablement role in Dallas?"
+- "Draft a cover letter for the Vericast VP Sales Enablement position"
+
+**Tip:** Paste the exact questions from the form so the AI can generate copy-paste-ready answers.
+
+### Chat features
+
+- **Streaming responses** — text appears token-by-token as the AI generates it
+- **Markdown rendering** — responses include formatted headers, bullets, tables, and code blocks
+- **Stop button** — click Stop to interrupt a long response
+- **Conversation memory** — the AI remembers everything said in the current conversation
+- **50-message limit** — when reached, click "Start new conversation" to continue
+- **Mode switching** — changing modes clears the conversation (with confirmation)
+
+---
+
+## 11. Where Your Data Lives
+
+All data stays on your machine. The dashboard reads and writes the same files that the CLI uses.
+
+| File | What it contains |
+|------|-----------------|
+| `cv.md` | Your CV in markdown (source of truth) |
+| `config/profile.yml` | Your name, email, location, target roles, comp range |
+| `modes/_profile.md` | Your personalization overrides (archetypes, narrative, negotiation scripts) |
+| `portals.yml` | Companies and search keywords for the scanner |
+| `data/applications.md` | The tracker — every evaluated role in a markdown table |
+| `data/pipeline.md` | Pending URLs to evaluate (populated by the scanner) |
+| `data/scan-history.tsv` | Dedup log so the scanner doesn't re-add the same URLs |
+| `reports/` | Evaluation reports (one `.md` file per role) |
+| `output/` | Generated PDF resumes (one `.pdf` per role) |
+| `batch/tracker-additions/` | Staging area for new tracker entries before merge |
+| `web/.env` | Your Anthropic API key and server config (never committed) |
+
+---
+
+## 12. Typical End-to-End Session
+
+Here's what a normal job search session looks like:
+
+### First time — set up and evaluate manually
+
+1. Start the dashboard (two terminals, see [Section 2](#2-starting-the-dashboard))
+2. Open http://localhost:5173/
+3. Click **Evaluate**
+4. Paste a job URL you found → click **Start evaluation**
+5. Wait 2–4 minutes for the full pipeline to complete
+6. Go to **Pipeline** → review the score and report
+7. If score is 4.0+, open the report, review the tailored CV in `output/`, and apply
+8. Update status to "Applied"
+
+### Ongoing — scan and batch process
+
+1. Start the dashboard
+2. Click **Scan** → wait for it to finish scanning all configured portals
+3. Click **Process pipeline** → evaluates up to 5 new URLs from the scan
+4. Review new entries on the **Pipeline** tab
+5. Sort through results: SKIP low scores, evaluate promising ones further, apply to the best fits
+6. Repeat every few days
+
+### Decision framework
+
+| Score | Recommendation |
+|-------|---------------|
+| **4.5–5.0** | Strong fit. Apply immediately. Review the tailored PDF. |
+| **4.0–4.4** | Good fit. Worth applying. Check the gap analysis for talking points. |
+| **3.5–3.9** | Marginal. Only apply if you have a specific reason (network connection, passion for the company). |
+| **Below 3.5** | Poor fit. Mark as SKIP. Your time is better spent elsewhere. |
+
+---
+
+## 13. Troubleshooting
+
+### "ANTHROPIC_API_KEY is not set"
+Your `web/.env` file is missing or doesn't have the key. Check that:
+- The file is named `.env` (not `.env.sh` or `.env.example`)
+- It contains `ANTHROPIC_API_KEY=sk-ant-api03-...`
+- You restarted the API server after editing it
+
+### "model: ... not found" (404 from Anthropic)
+The model ID in your `.env` is outdated. Update `ANTHROPIC_MODEL` to a current model (e.g., `claude-sonnet-4-6`). Check [Anthropic's model docs](https://docs.anthropic.com/en/docs/about-claude/models/all-models) for current IDs.
+
+### Evaluation takes a long time (3–5 minutes)
+This is normal. The pipeline makes two LLM round-trips and two Playwright operations:
+1. Playwright → extract JD from URL
+2. LLM → generate evaluation report
+3. LLM → generate tailored CV content
+4. Playwright → render CV as PDF
+
+### "No applications.md found"
+The tracker file doesn't exist yet. Create it:
+```powershell
+# From repo root
+mkdir data -ErrorAction SilentlyContinue
+```
+Then add a file `data/applications.md` with:
+```markdown
+# Applications Tracker
+
+| # | Date | Company | Role | Score | Status | PDF | Report | Notes |
+|---|------|---------|------|-------|--------|-----|--------|-------|
+```
+
+### Scan finds no results
+- Check that `portals.yml` has companies with `enabled: true`
+- Check that `title_filter.positive` keywords match your target roles
+- Some career pages may block automated browsing — try updating the URLs
+
+### Port already in use
+If port 8787 or 5173 is taken, edit `web/.env` (for the API port) or check the Vite output for the actual port assigned.
+
+---
+
+## 14. Feature Reference
+
+### Implemented in the web dashboard
+
+| Feature | Original CLI mode | Dashboard equivalent |
+|---------|------------------|---------------------|
+| Evaluate a single offer | `/career-ops {paste URL}` or `oferta` | **Evaluate** tab → paste URL or JD → Start evaluation |
+| Generate tailored PDF | `pdf` | Auto-generated as part of every evaluation |
+| Scan portals | `scan` | **Scan** button on Pipeline tab |
+| Process pending URLs | `pipeline` | **Process pipeline** button on Pipeline tab |
+| View/filter pipeline | `tracker` / Go TUI dashboard | **Pipeline** tab with search + status filter |
+| Update application status | Edit `applications.md` | Status dropdown on each row |
+| View evaluation reports | Open `reports/*.md` | **View report** button → Report tab |
+| Open original job listing | N/A | **Open JD** link in Actions column |
+| Merge tracker entries | `node merge-tracker.mjs` | **Merge tracker** button |
+| Compare multiple offers | `ofertas` | **Chat** tab → Compare Offers mode |
+| LinkedIn outreach message | `contacto` | **Chat** tab → LinkedIn Outreach mode |
+| Deep company research | `deep` | **Chat** tab → Company Research mode |
+| Evaluate a course/cert | `training` | **Chat** tab → Evaluate Training mode |
+| Evaluate a portfolio project | `project` | **Chat** tab → Evaluate Project mode |
+| Fill application forms | `apply` | **Chat** tab → Application Helper mode |
+| General career advice | N/A | **Chat** tab → General mode |
+| Pipeline health check | `node verify-pipeline.mjs` | Run from terminal |
+| Dedup tracker | `node dedup-tracker.mjs` | Run from terminal |
+| Normalize statuses | `node normalize-statuses.mjs` | Run from terminal |
+
+### Terminal-only features
+
+| Feature | How to use |
+|---------|-----------|
+| Batch processing (parallel workers) | Run `batch/batch-runner.sh` from the terminal |
+| Pipeline health check | `node verify-pipeline.mjs` |
+| Dedup tracker | `node dedup-tracker.mjs` |
+| Normalize statuses | `node normalize-statuses.mjs` |
+
+---
+
+## Quick Reference Card
+
+| I want to... | Do this |
+|--------------|---------|
+| Evaluate a job I found | **Evaluate** tab → paste URL → Start evaluation |
+| Find new jobs automatically | **Pipeline** tab → click **Scan** |
+| Evaluate jobs the scanner found | **Pipeline** tab → click **Process pipeline** |
+| Read an evaluation | **Pipeline** tab → click **View report** on a row |
+| Track my progress | **Pipeline** tab → change Status dropdown on each row |
+| Filter by status | **Pipeline** tab → use the Status dropdown in the toolbar |
+| Search for a company | **Pipeline** tab → type in the Search box |
+| See job progress/logs | Look at the floating bar at the bottom of the screen |
+| Run maintenance scripts | Click **Merge tracker**, or run scripts from terminal |
+| Compare my top offers | **Chat** tab → Compare Offers mode |
+| Write a LinkedIn message | **Chat** tab → LinkedIn Outreach mode |
+| Research a company for an interview | **Chat** tab → Company Research mode |
+| Decide if a cert is worth it | **Chat** tab → Evaluate Training mode |
+| Score a portfolio project idea | **Chat** tab → Evaluate Project mode |
+| Get help filling out an application | **Chat** tab → Application Helper mode |
+| Get general career advice | **Chat** tab → General mode |

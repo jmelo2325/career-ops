@@ -1,0 +1,10 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+/* Small UX polish: reduce cognitive load via consistent focus ring */
+:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.45), 0 0 0 4px rgba(0, 0, 0, 0.9);
+  border-radius: 8px;
+}
+
