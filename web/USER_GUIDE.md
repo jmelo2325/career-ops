@@ -117,25 +117,37 @@ npm run dev
 
 ## 3. Dashboard Layout
 
-The dashboard has four views, accessible via the top-right navigation bar:
+### Header and navigation
+
+The top bar shows the app title (**Jessica’s Job Tracker**) and **Local dashboard**, plus **three** primary nav items (top right):
 
 | Tab | Purpose |
 |-----|---------|
-| **Pipeline** | Your main workspace. Shows all tracked applications in a table with search, filter, and action buttons. |
-| **Evaluate** | Submit a new job listing for AI evaluation. |
-| **Chat** | Conversational AI assistant with 7 specialized modes (compare offers, outreach, research, and more). |
-| **Report** | Read a full evaluation report (opens when you click "View report" on a row). |
+| **Pipeline** | Main workspace: tracked applications, search, filters, sorting, and bulk actions. |
+| **Evaluate** | Submit a new job URL or pasted JD text for a full evaluation + tailored PDF. |
+| **Chat** | Streaming AI assistant with **7** specialized modes (see [Workflow 7](#10-workflow-7--ai-chat-conversational-modes)). |
+
+There is **no separate “Report” tab**. When you open a report from the pipeline, the **report view replaces the pipeline content** in the main area; **Pipeline** stays highlighted in the nav so you can return in one click (or use **Back to pipeline** in the report sidebar).
+
+To change the header title or subtitle, edit `web/ui/src/App.tsx` (e.g. branding for your own fork).
 
 ### Pipeline View toolbar
 
-The Pipeline view has a toolbar at the top with:
+The Pipeline toolbar includes:
 
-- **Search box** — type to filter by company, role, or notes
-- **Refresh** button — reload data from `applications.md`
-- **Scan** button — start scanning configured portals for new job listings
-- **Process pipeline** button — evaluate pending URLs from your pipeline
-- **Merge tracker** button — merge any pending evaluation results into your tracker
-- **Status dropdown** — filter the table by application status (All, Evaluated, Applied, etc.)
+- **Search box** — filter rows by company, role, or notes
+- **Refresh** — reload data from `data/applications.md`
+- **Scan** — start portal scanning (see [Workflow 2](#5-workflow-2--scan-portals-for-new-jobs))
+- **Process pipeline** — evaluate pending URLs from `data/pipeline.md` (batch of up to 5)
+- **Merge tracker** — run `merge-tracker.mjs` to merge pending TSV additions into the tracker
+- **Status** dropdown — filter by application status (All, Evaluated, Applied, …)
+
+Each of **Scan**, **Process pipeline**, and **Merge tracker** has a small **ⓘ** info button next to it: click for a short explanation of what the action reads, writes, and when to use it.
+
+### Pipeline table
+
+- **Score** column — click the **Score** header to cycle sort: **unsorted** → **highest first** → **lowest first** → **unsorted** (icons ⇅ / ↓ / ↑).
+- **Actions** — **Open JD** (if a URL is stored), **View report** (opens the structured report view).
 
 ### Floating Job Progress Bar
 
@@ -168,7 +180,7 @@ This is the core workflow. You found a job listing and want career-ops to evalua
 4. The **floating progress bar** appears at the bottom. Watch the steps:
    - *Loading context* — reads your CV, profile, and mode files
    - *Extracting JD from URL* — Playwright visits the page (if URL provided)
-   - *Generating A–F evaluation* — the AI evaluates fit across 10 dimensions
+   - *Generating A–F evaluation* — the AI produces the structured report (sections A–F plus scoring summary)
    - *Writing report* — saves the markdown report to `reports/`
    - *Writing tracker addition TSV* — creates a tracker entry
    - *Merging tracker* — runs `merge-tracker.mjs` to add the entry to `applications.md`
@@ -185,7 +197,7 @@ This is the core workflow. You found a job listing and want career-ops to evalua
 | File | Location | Description |
 |------|----------|-------------|
 | Evaluation report | `reports/001-company-slug-YYYY-MM-DD.md` | Full A–F scoring with fit analysis, gaps, interview prep, negotiation notes |
-| Tailored PDF | `output/cv-company-slug-001.pdf` | ATS-optimized resume customized for this specific role |
+| Tailored PDF | `output/cv-{company-slug}-{###}.pdf` | ATS-optimized resume; the 3-digit number matches the report number (e.g. report `003-…` → `cv-acme-003.pdf`) |
 | Tracker entry | `data/applications.md` | Row added with score, status, report link |
 
 ### The evaluation report includes
@@ -196,7 +208,7 @@ This is the core workflow. You found a job listing and want career-ops to evalua
 - **Compensation research** — market data and negotiation framing
 - **Personalization** — how to position your narrative for this role
 - **Interview prep** — STAR+R stories tailored to likely questions
-- **Overall score** — weighted 0–5 across 10 dimensions
+- **Overall score** — 0–5, with a **Scoring Summary** table when present (dimensions such as match, alignment, comp, culture)
 
 ---
 
@@ -272,50 +284,61 @@ After scanning, your `data/pipeline.md` will have pending URLs. "Process pipelin
 
 ## 7. Workflow 4 — Review a Report
 
-Reports are rendered as a rich, structured dashboard — not raw markdown.
+Reports open **in the main content area** (not a fourth nav tab). They are rendered as a **rich, structured layout** — executive summary, cards, accordions — with optional raw markdown at the bottom.
 
 ### Steps
 
-1. On the **Pipeline** tab, find the row you want to review
+1. On the **Pipeline** tab, find the row you want to review.
 
-2. Click the **View report** button (the gradient-colored button in the Actions column)
+2. Click **View report** (gradient button in the **Actions** column).
 
-3. The view switches to the **Report** tab. The layout has three areas:
+3. The **report view** loads. On **narrow screens**, use **Back to pipeline** at the top of the actions block or in the sticky rail when visible.
 
-#### Executive Summary Header (always visible)
-   - **Score ring** — animated circular gauge showing the overall score out of 5
-   - **Company & role** — title, archetype badge, date, link to original posting
-   - **TL;DR** — one-sentence summary of the role
-   - **Recommendation badge** — color-coded decision guidance:
-     - Green: "Recommended — Apply" (4.5+)
-     - Amber: "Worth pursuing — review gaps" (4.0–4.4)
-     - Blue: "Worth considering — significant gaps" (3.5–3.9)
-     - Gray: "Weak fit — not recommended" (below 3.5)
-   - **Dimension scores** — individual score bars for Match, North Star, Comp, and Culture
+### Executive summary (top)
 
-#### Collapsible Sections (click to expand/collapse)
-   - **Role Snapshot** — key dimensions in a card grid (archetype, domain, function, seniority, remote, team size, comp)
-   - **Requirements Match** — each JD requirement shown as a card with a color-coded strength chip (Strong/Moderate/Gap/Mitigable) and supporting evidence
-   - **Gaps & Mitigation** — each gap with severity badge, adjacent experience, and a highlighted mitigation suggestion
-   - **Compensation & Market** — market data cards with assessment and negotiation notes
-   - **Level & Strategy** — verdict on level fit and strategy tips
-   - **Personalization Plan** — numbered CV and LinkedIn change recommendations
-   - **Interview Prep** — expandable STAR+R story cards with S/T/A/R/Reflection breakdowns, recommended case study, and red-flag Q&A
-   - **Full Analysis** — the complete markdown report, toggleable between rendered and raw views
+- **Score ring** — overall score out of 5  
+- **Company & role**, **archetype**, **date**, **View posting →** (if a URL was captured)  
+- **TL;DR** when present in the report  
+- **Recommendation badge** — color-coded guidance (e.g. strong apply vs. caution vs. skip) based on score bands  
+- **Dimension scores** — when the report includes a **Scoring Summary** table, bars appear per dimension; **older reports** without that table may show **synthesized** bars (e.g. overall fit / requirements match) so the UI still has signal  
 
-#### Sticky Action Rail (large screens)
-   - "Back to pipeline" button
-   - Link to the original job posting
-   - Quick stats summary (overall score, strong matches, gaps, story count, comp score)
-   - Report file path
+### Collapsible sections (accordions)
 
-4. Expand sections as needed. Start with the **Executive Summary** for a quick decision, then drill into specific sections for detail.
+- **Role Snapshot** — role dimensions as cards  
+- **Requirements Match** — requirement cards with strength chips (Strong / Moderate / Gap / Mitigable)  
+- **Gaps & Mitigation** — gaps, severity, mitigations  
+- **Compensation & Market** — comp data and assessment when present  
+- **Level & Strategy** — verdict and tips  
+- **Personalization Plan** — CV and LinkedIn tweaks when present  
+- **Interview Prep** — STAR stories, case study, red-flag Q&A  
+- **Full Analysis** — full markdown: toggle **Rendered** vs **Show raw markdown**  
 
-5. Click **Back to pipeline** (sidebar or browser back) to return to the table.
+### Sticky action rail (large screens — right column)
+
+- **← Back to pipeline**  
+- **View job posting →** — when a URL exists  
+- **View tailored CV** — appears only when a matching PDF exists under `output/` (see below)  
+- **Quick Stats** — score, match counts, STAR count, comp score when available  
+- **Report file** — relative path (e.g. `reports/003-company-2026-04-07.md`)  
+
+### Tailored CV (PDF) in the browser
+
+If evaluation completed PDF generation, the file exists as `output/cv-{slug}-{###}.pdf`. The UI detects it by report number and shows **View tailored CV**:
+
+- Opens a **modal** with an embedded PDF viewer (simple iframe).  
+- **Show on my computer** — opens File Explorer (Windows) / Finder (macOS) with that file selected (local paths only).  
+- **Download** — saves a copy via the browser.  
+- **✕** — close the modal.
+
+If a report was created **before** PDF generation succeeded (or PDF step failed), there is **no** tailored file — the button is hidden until a matching PDF exists.
+
+### Mobile
+
+On small viewports the sticky rail is hidden; use **View tailored CV** next to the recommendation badge when a PDF is available.
 
 ### Opening the original job listing
 
-If the evaluation included a URL, the **View posting →** link appears in the executive header and sidebar. Click it to open the original listing in a new tab.
+If the evaluation included a URL, **View posting →** appears in the header and in the sidebar. It opens the listing in a new tab.
 
 ---
 
@@ -407,7 +430,7 @@ Open-ended career advice using your full profile context.
 - "Summarize my top 3 strengths based on my CV"
 
 #### Compare Offers (`ofertas`)
-Compare multiple evaluated offers using a 10-dimension weighted scoring matrix.
+Compare multiple evaluated offers side by side using the same scoring lens as your reports (reference report numbers like `#001`).
 
 **Example prompts:**
 - "Compare offers #001 and #003 — which should I prioritize?"
@@ -501,13 +524,13 @@ Here's what a normal job search session looks like:
 
 ### First time — set up and evaluate manually
 
-1. Start the dashboard (two terminals, see [Section 2](#2-starting-the-dashboard))
-2. Open http://localhost:5173/
+1. Start the dashboard (`cd web` → `npm run dev`, or two terminals — see [Section 2](#2-starting-the-dashboard))
+2. Open http://localhost:5173/ (or the port Vite prints)
 3. Click **Evaluate**
 4. Paste a job URL you found → click **Start evaluation**
 5. Wait 2–4 minutes for the full pipeline to complete
 6. Go to **Pipeline** → review the score and report
-7. If score is 4.0+, open the report, review the tailored CV in `output/`, and apply
+7. If score is 4.0+, open the report; use **View tailored CV** in the report view (or open the PDF under `output/`) before applying
 8. Update status to "Applied"
 
 ### Ongoing — scan and batch process
@@ -570,6 +593,9 @@ Then add a file `data/applications.md` with:
 ### Port already in use
 If port 8787 or 5173 is taken, edit `web/.env` (for the API port) or check the Vite output for the actual port assigned.
 
+### "View tailored CV" does not appear
+The button only shows when a file matching `output/cv-*-{###}.pdf` exists for that report’s 3-digit number. If an evaluation failed during the PDF step, regenerate by re-running evaluation for that job or copy a PDF into `output/` with the expected name. Ensure the **API server** can read `output/` (same repo root as `reports/`).
+
 ---
 
 ## 14. Feature Reference
@@ -582,11 +608,12 @@ If port 8787 or 5173 is taken, edit `web/.env` (for the API port) or check the V
 | Generate tailored PDF | `pdf` | Auto-generated as part of every evaluation |
 | Scan portals | `scan` | **Scan** button on Pipeline tab |
 | Process pending URLs | `pipeline` | **Process pipeline** button on Pipeline tab |
-| View/filter pipeline | `tracker` / Go TUI dashboard | **Pipeline** tab with search + status filter |
+| View/filter pipeline | `tracker` / Go TUI dashboard | **Pipeline** tab: search, **Status** filter, **Score** column sort |
 | Update application status | Edit `applications.md` | Status dropdown on each row |
-| View evaluation reports | Open `reports/*.md` | **View report** button → Report tab |
-| Open original job listing | N/A | **Open JD** link in Actions column |
-| Merge tracker entries | `node merge-tracker.mjs` | **Merge tracker** button |
+| View evaluation reports | Open `reports/*.md` | **View report** → structured report view (Pipeline nav stays active; no separate Report tab) |
+| View tailored PDF | Open `output/*.pdf` | **View tailored CV** in report modal + **Show on my computer** / **Download** |
+| Open original job listing | N/A | **Open JD** in the table; **View job posting →** in the report |
+| Merge tracker entries | `node merge-tracker.mjs` | **Merge tracker** button (ⓘ explains behavior) |
 | Compare multiple offers | `ofertas` | **Chat** tab → Compare Offers mode |
 | LinkedIn outreach message | `contacto` | **Chat** tab → LinkedIn Outreach mode |
 | Deep company research | `deep` | **Chat** tab → Company Research mode |
@@ -613,19 +640,23 @@ If port 8787 or 5173 is taken, edit `web/.env` (for the API port) or check the V
 
 | I want to... | Do this |
 |--------------|---------|
-| Evaluate a job I found | **Evaluate** tab → paste URL → Start evaluation |
-| Find new jobs automatically | **Pipeline** tab → click **Scan** |
-| Evaluate jobs the scanner found | **Pipeline** tab → click **Process pipeline** |
-| Read an evaluation | **Pipeline** tab → click **View report** on a row |
-| Track my progress | **Pipeline** tab → change Status dropdown on each row |
-| Filter by status | **Pipeline** tab → use the Status dropdown in the toolbar |
-| Search for a company | **Pipeline** tab → type in the Search box |
-| See job progress/logs | Look at the floating bar at the bottom of the screen |
-| Run maintenance scripts | Click **Merge tracker**, or run scripts from terminal |
-| Compare my top offers | **Chat** tab → Compare Offers mode |
-| Write a LinkedIn message | **Chat** tab → LinkedIn Outreach mode |
-| Research a company for an interview | **Chat** tab → Company Research mode |
-| Decide if a cert is worth it | **Chat** tab → Evaluate Training mode |
-| Score a portfolio project idea | **Chat** tab → Evaluate Project mode |
-| Get help filling out an application | **Chat** tab → Application Helper mode |
-| Get general career advice | **Chat** tab → General mode |
+| Start the app | `cd web` → `npm run dev` → open the URL Vite prints (usually port **5173**) |
+| Evaluate a job I found | **Evaluate** tab → paste URL or JD → **Start evaluation** |
+| Find new jobs automatically | **Pipeline** → **Scan** (ⓘ for details) |
+| Evaluate jobs the scanner found | **Pipeline** → **Process pipeline** (ⓘ) |
+| Read an evaluation | **Pipeline** → **View report** (report opens in-page; **Pipeline** stays selected in the nav) |
+| Open the tailored PDF | In the report → **View tailored CV** → optional **Show on my computer** |
+| Sort by score | **Pipeline** → click the **Score** column header (⇅ / ↓ / ↑) |
+| Track my progress | **Pipeline** → **Status** dropdown on each row |
+| Filter by status | **Pipeline** → toolbar **Status** filter |
+| Search for a company | **Pipeline** → **Search** box |
+| See job progress/logs | Floating bar at the bottom (**Show logs** / **Dismiss**) |
+| Merge tracker TSVs into the table | **Merge tracker** (ⓘ) |
+| Other maintenance (verify / dedup / normalize) | Run `node *.mjs` from the repo root (see [Workflow 6](#9-workflow-6--pipeline-maintenance)) |
+| Compare my top offers | **Chat** → Compare Offers |
+| Write a LinkedIn message | **Chat** → LinkedIn Outreach |
+| Research a company for an interview | **Chat** → Company Research |
+| Decide if a cert is worth it | **Chat** → Evaluate Training |
+| Score a portfolio project idea | **Chat** → Evaluate Project |
+| Get help filling out an application | **Chat** → Application Helper |
+| Get general career advice | **Chat** → General |
