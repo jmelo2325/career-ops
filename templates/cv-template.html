@@ -38,11 +38,17 @@
     unicode-range: U+0100-02AF, U+0304, U+0308, U+0329, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
   }
 
-  * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+  :root {
+    --brand: {{BRAND_PRIMARY}};
+    --accent: {{BRAND_ACCENT}};
+    --text: #1a1a2e;
+    --text-light: #555;
+    --text-muted: #777;
+    --bg: #ffffff;
+    --rule: #e8e8e8;
   }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
 
   html {
     -webkit-print-color-adjust: exact;
@@ -51,198 +57,245 @@
 
   body {
     font-family: 'DM Sans', sans-serif;
-    font-size: 11px;
-    line-height: 1.5;
-    color: #1a1a2e;
-    background: #ffffff;
-    padding: 0;
-    margin: 0;
+    font-size: 10.5px;
+    line-height: 1.55;
+    color: var(--text);
+    background: var(--bg);
   }
+
+  a { white-space: nowrap; }
 
   .page {
     width: 100%;
     max-width: {{PAGE_WIDTH}};
     margin: 0 auto;
-    padding: 0;
   }
 
-  /* === HEADER === */
-  .header {
-    margin-bottom: 16px;
+  /* ──────────────────────────────────────────────
+     HEADER — full-width brand-colored banner
+     ────────────────────────────────────────────── */
+  .header-banner {
+    background: var(--brand);
+    padding: 28px 0 22px;
+    margin-bottom: 0;
   }
 
-  .header h1 {
+  .header-banner .header-inner {
+    max-width: {{PAGE_WIDTH}};
+    margin: 0 auto;
+  }
+
+  .header-banner h1 {
     font-family: 'Space Grotesk', sans-serif;
-    font-size: 24px;
+    font-size: 28px;
     font-weight: 700;
-    color: #1a1a2e;
-    letter-spacing: -0.02em;
-    margin-bottom: 4px;
+    color: #ffffff;
+    letter-spacing: -0.01em;
+    line-height: 1.15;
   }
 
-  .header-gradient {
-    height: 2px;
-    background: linear-gradient(to right, hsl(187, 74%, 32%), hsl(270, 70%, 45%));
-    border-radius: 1px;
-    margin-bottom: 8px;
+  .header-banner .headline {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 11.5px;
+    font-weight: 400;
+    color: rgba(255,255,255,0.78);
+    margin-top: 3px;
+    letter-spacing: 0.02em;
   }
 
-  .contact-row {
+  /* Contact strip — sits right below the banner */
+  .contact-strip {
+    border-bottom: 3px solid var(--accent);
+    padding: 8px 0;
+    margin-bottom: 18px;
+  }
+
+  .contact-strip .contact-inner {
+    max-width: {{PAGE_WIDTH}};
+    margin: 0 auto;
     display: flex;
     flex-wrap: wrap;
-    gap: 6px 16px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 10px;
-    color: #555;
+    gap: 4px 14px;
+    font-size: 9.5px;
+    color: var(--text-light);
   }
 
-  .contact-row a {
-    color: #555;
+  .contact-strip a {
+    color: var(--accent);
     text-decoration: none;
+    font-weight: 500;
   }
 
-  .contact-row .separator {
+  .contact-strip .sep {
     color: #ccc;
   }
 
-  /* === SECTIONS === */
+  /* ──────────────────────────────────────────────
+     SECTION TITLES — editorial style
+     ────────────────────────────────────────────── */
   .section {
-    margin-bottom: 14px;
+    margin-bottom: 16px;
   }
 
   .section-title {
     font-family: 'Space Grotesk', sans-serif;
-    font-size: 13px;
+    font-size: 11px;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: hsl(187, 74%, 32%);
-    border-bottom: 1px solid #e5e5e5;
-    padding-bottom: 3px;
+    letter-spacing: 0.12em;
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    gap: 8px;
     margin-bottom: 8px;
   }
 
-  /* === PROFESSIONAL SUMMARY === */
+  .section-title::before {
+    content: '';
+    display: inline-block;
+    width: 16px;
+    height: 2px;
+    background: var(--accent);
+    border-radius: 1px;
+    flex-shrink: 0;
+  }
+
+  /* ──────────────────────────────────────────────
+     PROFESSIONAL SUMMARY
+     ────────────────────────────────────────────── */
   .summary-text {
-    font-size: 11px;
-    line-height: 1.6;
+    font-size: 10.5px;
+    line-height: 1.65;
     color: #333;
   }
 
-  /* Links must never break across lines */
-  a {
-    white-space: nowrap;
-  }
-
-  /* === CORE COMPETENCIES === */
+  /* ──────────────────────────────────────────────
+     CORE COMPETENCIES — brand-tinted pills
+     ────────────────────────────────────────────── */
   .competencies-grid {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
+    gap: 5px;
   }
 
   .competency-tag {
     font-family: 'DM Sans', sans-serif;
-    font-size: 10px;
+    font-size: 9.5px;
     font-weight: 500;
-    color: hsl(187, 74%, 28%);
-    background: hsl(187, 40%, 95%);
+    color: var(--brand);
+    background: color-mix(in srgb, var(--brand) 8%, white);
+    border: 1px solid color-mix(in srgb, var(--brand) 18%, white);
     padding: 3px 10px;
-    border-radius: 3px;
-    border: 1px solid hsl(187, 40%, 88%);
+    border-radius: 12px;
   }
 
-  /* === WORK EXPERIENCE === */
+  /* ──────────────────────────────────────────────
+     WORK EXPERIENCE — timeline left border
+     ────────────────────────────────────────────── */
   .job {
-    margin-bottom: 12px;
+    margin-bottom: 13px;
+    padding-left: 14px;
+    border-left: 2px solid color-mix(in srgb, var(--accent) 35%, white);
+    position: relative;
+  }
+
+  .job::before {
+    content: '';
+    position: absolute;
+    left: -4px;
+    top: 5px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
   }
 
   .job-header {
     display: flex;
     justify-content: space-between;
     align-items: baseline;
-    margin-bottom: 2px;
+    margin-bottom: 1px;
   }
 
   .job-company {
     font-family: 'Space Grotesk', sans-serif;
-    font-size: 12px;
+    font-size: 11.5px;
     font-weight: 600;
-    color: hsl(270, 70%, 45%);
+    color: var(--accent);
   }
 
   .job-period {
-    font-size: 10px;
-    color: #777;
+    font-size: 9.5px;
+    color: var(--text-muted);
     white-space: nowrap;
   }
 
   .job-role {
-    font-size: 11px;
+    font-size: 10.5px;
     font-weight: 500;
     color: #444;
-    margin-bottom: 4px;
+    margin-bottom: 3px;
   }
 
   .job-location {
-    font-size: 10px;
-    color: #888;
+    font-size: 9.5px;
+    color: #999;
   }
 
   .job ul {
-    padding-left: 16px;
-    margin-top: 4px;
+    padding-left: 14px;
+    margin-top: 3px;
   }
 
   .job li {
-    font-size: 10.5px;
+    font-size: 10px;
     line-height: 1.5;
     color: #333;
-    margin-bottom: 2px;
+    margin-bottom: 1.5px;
   }
 
-  .job li strong {
-    font-weight: 600;
-  }
+  .job li strong { font-weight: 600; }
 
-  /* === PROJECTS === */
+  /* ──────────────────────────────────────────────
+     PROJECTS
+     ────────────────────────────────────────────── */
   .project {
-    margin-bottom: 10px;
+    margin-bottom: 8px;
   }
 
   .project-title {
     font-family: 'Space Grotesk', sans-serif;
-    font-size: 11px;
+    font-size: 10.5px;
     font-weight: 600;
-    color: hsl(270, 70%, 45%);
+    color: var(--accent);
   }
 
   .project-badge {
-    font-size: 9px;
+    font-size: 8.5px;
     font-weight: 500;
-    color: hsl(187, 74%, 32%);
-    background: hsl(187, 40%, 95%);
+    color: var(--brand);
+    background: color-mix(in srgb, var(--brand) 8%, white);
     padding: 1px 6px;
-    border-radius: 2px;
+    border-radius: 8px;
     margin-left: 6px;
   }
 
   .project-desc {
-    font-size: 10.5px;
+    font-size: 10px;
     color: #444;
     margin-top: 2px;
   }
 
   .project-tech {
-    font-size: 9.5px;
-    color: #888;
-    margin-top: 2px;
+    font-size: 9px;
+    color: #999;
+    margin-top: 1px;
   }
 
-  /* === EDUCATION === */
-  .edu-item {
-    margin-bottom: 6px;
-  }
+  /* ──────────────────────────────────────────────
+     EDUCATION
+     ────────────────────────────────────────────── */
+  .edu-item { margin-bottom: 5px; }
 
   .edu-header {
     display: flex;
@@ -252,100 +305,72 @@
 
   .edu-title {
     font-weight: 600;
-    font-size: 11px;
+    font-size: 10.5px;
     color: #333;
   }
 
-  .edu-org {
-    color: hsl(270, 70%, 45%);
-    font-weight: 500;
-  }
+  .edu-org { color: var(--accent); font-weight: 500; }
+  .edu-year { font-size: 9.5px; color: var(--text-muted); }
+  .edu-desc { font-size: 9.5px; color: #666; }
 
-  .edu-year {
-    font-size: 10px;
-    color: #777;
-  }
-
-  .edu-desc {
-    font-size: 10px;
-    color: #666;
-  }
-
-  /* === CERTIFICATIONS === */
+  /* ──────────────────────────────────────────────
+     CERTIFICATIONS
+     ────────────────────────────────────────────── */
   .cert-item {
     display: flex;
     justify-content: space-between;
     align-items: baseline;
-    margin-bottom: 4px;
+    margin-bottom: 3px;
   }
 
-  .cert-title {
-    font-size: 10.5px;
-    font-weight: 500;
-    color: #333;
-  }
+  .cert-title { font-size: 10px; font-weight: 500; color: #333; }
+  .cert-org { color: var(--accent); }
+  .cert-year { font-size: 9.5px; color: var(--text-muted); }
 
-  .cert-org {
-    color: hsl(270, 70%, 45%);
-  }
-
-  .cert-year {
-    font-size: 10px;
-    color: #777;
-  }
-
-  /* === SKILLS === */
+  /* ──────────────────────────────────────────────
+     SKILLS
+     ────────────────────────────────────────────── */
   .skills-grid {
     display: flex;
     flex-wrap: wrap;
-    gap: 4px 12px;
+    gap: 3px 12px;
   }
 
-  .skill-item {
-    font-size: 10.5px;
-    color: #444;
-  }
+  .skill-item { font-size: 10px; color: #444; }
+  .skill-category { font-weight: 600; color: #333; font-size: 10px; }
 
-  .skill-category {
-    font-weight: 600;
-    color: #333;
-    font-size: 10.5px;
-  }
-
-  /* === PRINT === */
+  /* ──────────────────────────────────────────────
+     PRINT & PAGE BREAK
+     ────────────────────────────────────────────── */
   @media print {
-    body {
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-    }
-    .page {
-      padding: 0;
-    }
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .page { padding: 0; }
   }
 
-  /* === PAGE BREAK CONTROL === */
-  .avoid-break {
-    break-inside: avoid;
-  }
+  .avoid-break { break-inside: avoid; }
 </style>
 </head>
 <body>
-<div class="page">
 
-  <!-- HEADER -->
-  <div class="header">
-    <h1>{{NAME}}</h1>
-    <div class="header-gradient"></div>
-    <div class="contact-row">
+  <!-- HEADER BANNER -->
+  <div class="header-banner">
+    <div class="header-inner">
+      <h1>{{NAME}}</h1>
+    </div>
+  </div>
+
+  <!-- CONTACT STRIP -->
+  <div class="contact-strip">
+    <div class="contact-inner">
       <span>{{EMAIL}}</span>
-      <span class="separator">|</span>
+      <span class="sep">|</span>
       <a href="{{LINKEDIN_URL}}">{{LINKEDIN_DISPLAY}}</a>
-      <span class="separator">|</span>
-      <a href="{{PORTFOLIO_URL}}">{{PORTFOLIO_DISPLAY}}</a>
-      <span class="separator">|</span>
+      <span class="sep">|</span>
       <span>{{LOCATION}}</span>
     </div>
   </div>
+
+<div class="page">
 
   <!-- PROFESSIONAL SUMMARY -->
   <div class="section">
@@ -373,12 +398,13 @@
     {{PROJECTS}}
   </div>
 
-  <!-- EDUCATION & CERTIFICATIONS -->
+  <!-- EDUCATION -->
   <div class="section avoid-break">
     <div class="section-title">{{SECTION_EDUCATION}}</div>
     {{EDUCATION}}
   </div>
 
+  <!-- CERTIFICATIONS -->
   <div class="section avoid-break">
     <div class="section-title">{{SECTION_CERTIFICATIONS}}</div>
     {{CERTIFICATIONS}}

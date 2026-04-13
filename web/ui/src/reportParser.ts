@@ -57,6 +57,12 @@ export type RoleSummaryItem = {
   detail: string;
 };
 
+export type CompSummary = {
+  base: string;
+  variable: string;
+  totalEstimate: string;
+};
+
 export type ParsedReport = {
   title: string;
   company: string;
@@ -67,6 +73,8 @@ export type ParsedReport = {
   score: number;
   scoreLabel: string;
   recommendation: "apply" | "apply-caution" | "consider" | "skip";
+
+  compSummary: CompSummary | null;
 
   roleSummary: RoleSummaryItem[];
   tldr: string;
@@ -231,6 +239,9 @@ export function parseReport(md: string): ParsedReport {
   const compScoreMatch = sectionD.match(/Comp score:\s*([\d.]+)/i);
   const compScore = compScoreMatch ? parseFloat(compScoreMatch[1]!) : null;
 
+  // Comp summary (surface at top of report)
+  const compSummary = buildCompSummary(roleSummary, sectionD);
+
   // E) Personalization Plan
   const sectionE = sections.find((s) => s.id === "e")?.content || "";
   const cvTableStart = sectionE.indexOf("| #");
@@ -333,6 +344,7 @@ export function parseReport(md: string): ParsedReport {
 
   return {
     title, company, role, url, date, archetype, score, scoreLabel, recommendation,
+    compSummary,
     roleSummary, tldr,
     matches, matchStats, gaps,
     levelVerdict, levelTips,
@@ -343,4 +355,61 @@ export function parseReport(md: string): ParsedReport {
     sections,
     rawMarkdown: md,
   };
+}
+
+function buildCompSummary(
+  roleSummary: RoleSummaryItem[],
+  sectionD: string
+): CompSummary | null {
+  const compRow = roleSummary.find((r) =>
+    /^comp/i.test(r.dimension.replace(/\*\*/g, "").trim())
+  );
+  const rawComp = compRow?.detail || "";
+
+  let base = "";
+  let variable = "";
+
+  const dollarRange = rawComp.match(/\$[\d,.]+[KkMm]?\s*[-–]\s*\$[\d,.]+[KkMm]?/);
+  if (dollarRange) {
+    base = dollarRange[0];
+  } else {
+    const singleDollar = rawComp.match(/\$[\d,.]+[KkMm]?\+?/);
+    if (singleDollar) base = singleDollar[0];
+  }
+
+  const variablePatterns = [
+    /\+\s*(.+(?:variable|bonus|commission|incentive|OTE|quarterly|annual)[^|]*)/i,
+    /(variable|bonus|commission|incentive|OTE|quarterly\s+(?:variable|bonus))[^|]*/i,
+    /(?:sales\s+incentive\s*\/?\s*commission[^|]*)/i,
+  ];
+  for (const pat of variablePatterns) {
+    const m = rawComp.match(pat);
+    if (m) {
+      variable = m[0].replace(/^\+\s*/, "").trim();
+      break;
+    }
+  }
+
+  if (!variable && sectionD) {
+    const varRow = sectionD.match(/\|\s*Variable\s*\|([^|]+)\|/i);
+    if (varRow) variable = varRow[1]!.trim();
+    if (!variable) {
+      const bonusLine = sectionD.match(/(quarterly|annual)\s+(variable|bonus)[^.\n]*/i);
+      if (bonusLine) variable = bonusLine[0].trim();
+    }
+  }
+
+  let totalEstimate = "";
+  if (sectionD) {
+    const tcMatch = sectionD.match(/(?:total\s*comp|TC)\s*(?:could\s+)?(?:reach|land|hit)?\s*\$[\d,.]+[KkMm]?\s*[-–]?\s*\$?[\d,.]*[KkMm]?/i);
+    if (tcMatch) totalEstimate = tcMatch[0].trim();
+    if (!totalEstimate) {
+      const oteLine = sectionD.match(/OTE\s*(?:of\s+|at\s+|lands?\s+at\s+)?\$[\d,.]+[KkMm]?\+?/i);
+      if (oteLine) totalEstimate = oteLine[0].trim();
+    }
+  }
+
+  if (!base && !variable) return null;
+
+  return { base, variable, totalEstimate };
 }

@@ -479,7 +479,9 @@ function AvatarIllustration() {
         <ellipse cx="32" cy="28" rx="16" ry="18" fill="#4a2f24" />
         <path d="M18 29c0-12 7-20 14-20 10 0 16 8 16 18 0 3-1 6-2 8-2-4-6-7-11-7-7 0-13 5-17 10-1-3 0-6 0-9Z" fill="#5b3728" />
         <circle cx="32" cy="31" r="12" fill="#f4c7a1" />
-        <path d="M24 28c2-2 5-3 8-3s6 1 8 3" stroke="#5b3728" strokeWidth="2" strokeLinecap="round" fill="none" />
+        {/* Two separate brows — a single path here read as one connected line (unibrow) */}
+        <path d="M21 28 Q25 25.5 29 28" stroke="#5b3728" strokeWidth="1.75" strokeLinecap="round" fill="none" />
+        <path d="M35 28 Q39 25.5 43 28" stroke="#5b3728" strokeWidth="1.75" strokeLinecap="round" fill="none" />
         <circle cx="28" cy="32" r="1.4" fill="#3f2a1f" />
         <circle cx="36" cy="32" r="1.4" fill="#3f2a1f" />
         <path d="M29 37c1 1 2 1.5 3 1.5s2-.5 3-1.5" stroke="#b4536a" strokeWidth="2" strokeLinecap="round" fill="none" />

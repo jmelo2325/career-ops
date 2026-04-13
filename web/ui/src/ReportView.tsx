@@ -182,6 +182,30 @@ export function ReportView({
             </div>
           </div>
 
+          {/* Comp callout — always visible when data exists */}
+          {rpt.compSummary && (
+            <div className="mt-5 flex flex-wrap items-stretch gap-3">
+              {rpt.compSummary.base && (
+                <div className="flex-1 min-w-[140px] rounded-xl bg-emerald-500/5 px-4 py-3 shadow-[inset_0_0_0_1px_rgba(52,211,153,0.12)]">
+                  <div className="text-[10px] font-semibold uppercase tracking-widest text-emerald-400/70">Base salary</div>
+                  <div className="mt-1 text-sm font-semibold text-emerald-200">{rpt.compSummary.base}</div>
+                </div>
+              )}
+              {rpt.compSummary.variable && (
+                <div className="flex-1 min-w-[140px] rounded-xl bg-amber-500/5 px-4 py-3 shadow-[inset_0_0_0_1px_rgba(251,191,36,0.12)]">
+                  <div className="text-[10px] font-semibold uppercase tracking-widest text-amber-400/70">Bonus / Commission</div>
+                  <div className="mt-1 text-sm font-semibold text-amber-200">{rpt.compSummary.variable}</div>
+                </div>
+              )}
+              {rpt.compSummary.totalEstimate && (
+                <div className="flex-1 min-w-[140px] rounded-xl bg-cyan-500/5 px-4 py-3 shadow-[inset_0_0_0_1px_rgba(34,211,238,0.12)]">
+                  <div className="text-[10px] font-semibold uppercase tracking-widest text-cyan-400/70">Est. total comp</div>
+                  <div className="mt-1 text-sm font-semibold text-cyan-200">{rpt.compSummary.totalEstimate}</div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Dimension scores — full breakdown or fallback overall bar */}
           {rpt.scoreDimensions.length > 0 ? (
             <div className="mt-5 grid gap-2.5 sm:grid-cols-2">

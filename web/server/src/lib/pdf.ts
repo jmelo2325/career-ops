@@ -16,6 +16,8 @@ function safeReplaceAll(s: string, map: Record<string, string>) {
 
 const PdfPartsSchema = z.object({
   lang: z.enum(["en", "es"]).default("en"),
+  brandPrimary: z.string().regex(/^#[0-9a-fA-F]{6}$/).default("#1a1a2e"),
+  brandAccent: z.string().regex(/^#[0-9a-fA-F]{6}$/).default("#2d6a6a"),
   summaryText: z.string().min(10),
   competencies: z.array(z.string().min(2)).min(4).max(12),
   experienceHtml: z.string().min(10),
@@ -57,10 +59,32 @@ export async function generateTailoredPdf(params: {
   const model = getAnthropicModel();
 
   const system = [
-    "You generate ATS-friendly resume content for an HTML template.",
+    "You generate ATS-friendly resume content for an editorial-style HTML template.",
     "Return ONLY valid JSON, no markdown, no backticks.",
-    "experienceHtml/projectsHtml/educationHtml/certificationsHtml/skillsHtml MUST be HTML fragments only (no <html>, <body>).",
-    "Use single-column, clean semantics, and concise bullets."
+    "HTML fields MUST be fragments only (no <html>, <body>).",
+    "",
+    "BRAND COLORS (required):",
+    "Return `brandPrimary` and `brandAccent` as hex strings (#RRGGBB).",
+    "These MUST match the target company's actual brand palette.",
+    "brandPrimary = the company's dominant brand color (used for the header banner).",
+    "brandAccent = a complementary color from their palette (used for section titles and highlights).",
+    "Examples: Salesforce → #00A1E0/#032D60, HubSpot → #FF7A59/#2D3E50, Anthropic → #D97757/#191919.",
+    "If you cannot identify the company, use #1a1a2e/#2d6a6a.",
+    "",
+    "HTML STRUCTURE for experienceHtml (use these CSS classes):",
+    '<div class="job"><div class="job-header"><span class="job-company">Company Name</span><span class="job-period">Jan 2022 – Present</span></div><div class="job-role">Title</div><ul><li>Achievement bullet</li></ul></div>',
+    "",
+    "HTML STRUCTURE for projectsHtml:",
+    '<div class="project"><span class="project-title">Name</span><div class="project-desc">Description</div><div class="project-tech">Tech stack</div></div>',
+    "",
+    "HTML STRUCTURE for educationHtml:",
+    '<div class="edu-item"><div class="edu-header"><span class="edu-title"><span class="edu-org">School</span> — Degree</span><span class="edu-year">Year</span></div></div>',
+    "",
+    "HTML STRUCTURE for certificationsHtml:",
+    '<div class="cert-item"><span class="cert-title"><span class="cert-org">Issuer</span> — Cert Name</span><span class="cert-year">Year</span></div>',
+    "",
+    "HTML STRUCTURE for skillsHtml:",
+    '<div class="skills-grid"><span class="skill-item"><span class="skill-category">Category:</span> items</span></div>',
   ].join("\n");
 
   const user = [
@@ -78,13 +102,13 @@ export async function generateTailoredPdf(params: {
 
   const resp = await client.messages.create({
     model,
-    max_tokens: 3500,
+    max_tokens: 6000,
     temperature: 0.2,
     system,
     messages: [
       {
         role: "user",
-        content: user + "\n\nReturn JSON with keys: lang, summaryText, competencies (string[]), experienceHtml, projectsHtml, educationHtml, certificationsHtml, skillsHtml."
+        content: user + "\n\nReturn JSON with keys: lang, brandPrimary, brandAccent, summaryText, competencies (string[]), experienceHtml, projectsHtml, educationHtml, certificationsHtml, skillsHtml."
       }
     ]
   });
@@ -127,15 +151,19 @@ export async function generateTailoredPdf(params: {
         SECTION_SKILLS: "Skills"
       };
 
+  const linkedinDisplay = linkedin
+    ? linkedin.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "")
+    : "";
+
   const filled = safeReplaceAll(template, {
     "{{LANG}}": lang,
     "{{PAGE_WIDTH}}": pageWidth,
+    "{{BRAND_PRIMARY}}": parsed.brandPrimary,
+    "{{BRAND_ACCENT}}": parsed.brandAccent,
     "{{NAME}}": escapeHtml(fullName),
     "{{EMAIL}}": escapeHtml(email),
     "{{LINKEDIN_URL}}": linkedin || "#",
-    "{{LINKEDIN_DISPLAY}}": linkedin ? "LinkedIn" : "",
-    "{{PORTFOLIO_URL}}": linkedin || "#",
-    "{{PORTFOLIO_DISPLAY}}": linkedin ? "Profile" : "",
+    "{{LINKEDIN_DISPLAY}}": linkedinDisplay,
     "{{LOCATION}}": escapeHtml(location),
     "{{SECTION_SUMMARY}}": sections.SECTION_SUMMARY,
     "{{SUMMARY_TEXT}}": parsed.summaryText,

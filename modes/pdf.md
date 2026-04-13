@@ -30,26 +30,35 @@
 - Sin tablas anidadas
 - Keywords del JD distribuidas: Summary (top 5), primer bullet de cada rol, Skills section
 
-## Diseño del PDF
+## Diseño del PDF — Editorial / Magazine style
+
+The template uses CSS custom properties `--brand` and `--accent` that shift the entire color palette per company.
 
 - **Fonts**: Space Grotesk (headings, 600-700) + DM Sans (body, 400-500)
 - **Fonts self-hosted**: `fonts/`
-- **Header**: nombre en Space Grotesk 24px bold + línea gradiente `linear-gradient(to right, hsl(187,74%,32%), hsl(270,70%,45%))` 2px + fila de contacto
-- **Section headers**: Space Grotesk 13px, uppercase, letter-spacing 0.05em, color cyan primary
-- **Body**: DM Sans 11px, line-height 1.5
-- **Company names**: color accent purple `hsl(270,70%,45%)`
-- **Márgenes**: 0.6in
-- **Background**: blanco puro
+- **Header**: full-width brand-colored banner (`--brand` background, white text), candidate name in Space Grotesk 28px bold. Below: contact strip with accent-colored underline (3px `--accent`).
+- **Section titles**: Space Grotesk 11px, uppercase, letter-spacing 0.12em, `--accent` color, preceded by a short 16px decorative dash in `--accent`. No full-width underline.
+- **Body**: DM Sans 10.5px, line-height 1.55
+- **Company names**: `--accent` color, Space Grotesk 11.5px semibold
+- **Experience blocks**: 2px left border in `--accent` (35% opacity) with a small accent dot — creates a timeline feel
+- **Competency pills**: rounded, brand-tinted background with brand-colored text
+- **Margins**: 0.6in
+- **Background**: white
+
+### Dynamic brand colors
+
+The LLM must return `brandPrimary` and `brandAccent` (hex `#RRGGBB`) matching the target company's real brand palette. These are injected as `--brand` and `--accent` CSS custom properties. Every structural color in the template references these variables, so the entire CV shifts to match the company.
 
 ## Orden de secciones (optimizado "6-second recruiter scan")
 
-1. Header (nombre grande, gradiente, contacto, link portfolio)
-2. Professional Summary (3-4 líneas, keyword-dense)
-3. Core Competencies (6-8 keyword phrases en flex-grid)
-4. Work Experience (cronológico inverso)
-5. Projects (top 3-4 más relevantes)
-6. Education & Certifications
-7. Skills (idiomas + técnicos)
+1. Header banner (name in white on brand-colored background)
+2. Contact strip (email, linkedin.com/in/..., location)
+3. Professional Summary (3-4 lines, keyword-dense)
+4. Core Competencies (6-8 keyword phrases in rounded pills)
+5. Work Experience (reverse chronological, timeline left border)
+6. Projects (top 3-4 most relevant)
+7. Education & Certifications
+8. Skills (languages + technical)
 
 ## Estrategia de keyword injection (ético, basado en verdad)
 
@@ -68,13 +77,13 @@ Usar el template en `cv-template.html`. Reemplazar los placeholders `{{...}}` co
 |-------------|-----------|
 | `{{LANG}}` | `en` o `es` |
 | `{{PAGE_WIDTH}}` | `8.5in` (letter) o `210mm` (A4) |
+| `{{BRAND_PRIMARY}}` | Hex color matching target company brand (e.g. `#00A1E0`) |
+| `{{BRAND_ACCENT}}` | Complementary hex color from company palette |
 | `{{NAME}}` | (from profile.yml) |
 | `{{EMAIL}}` | (from profile.yml) |
-| `{{LINKEDIN_URL}}` | [from profile.yml] |
-| `{{LINKEDIN_DISPLAY}}` | [from profile.yml] |
-| `{{PORTFOLIO_URL}}` | [from profile.yml] (o /es según idioma) |
-| `{{PORTFOLIO_DISPLAY}}` | [from profile.yml] (o /es según idioma) |
-| `{{LOCATION}}` | [from profile.yml] |
+| `{{LINKEDIN_URL}}` | Full URL (from profile.yml) |
+| `{{LINKEDIN_DISPLAY}}` | Readable path, e.g. `linkedin.com/in/jessmelo` |
+| `{{LOCATION}}` | (from profile.yml) |
 | `{{SECTION_SUMMARY}}` | Professional Summary / Resumen Profesional |
 | `{{SUMMARY_TEXT}}` | Summary personalizado con keywords |
 | `{{SECTION_COMPETENCIES}}` | Core Competencies / Competencias Core |
