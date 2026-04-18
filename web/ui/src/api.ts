@@ -35,6 +35,16 @@ export type Job = {
   error?: string;
 };
 
+/** Returned when `job.type === "scan"` and job succeeded */
+export type ScanJobResult = {
+  added: number;
+  companiesScanned: number;
+  greenhouseBoards: number;
+  playwrightPages: number;
+  failures: Array<{ company: string; error: string }>;
+  message: string;
+};
+
 async function api<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init);
   if (!res.ok) {

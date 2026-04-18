@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 
 import { createEvaluateJob, createPipelineJob, createScanJob, getApplications, getJob, patchStatus, readReport, runScript } from "./api";
-import type { CareerApplication, Job } from "./api";
+import type { CareerApplication, Job, ScanJobResult } from "./api";
 import { Chat } from "./Chat";
 import { ReportView } from "./ReportView";
 
@@ -36,6 +36,30 @@ function classNames(...xs: Array<string | false | undefined | null>) {
   return xs.filter(Boolean).join(" ");
 }
 
+function scanResultMessage(job: Job | null): string | null {
+  if (!job || job.state !== "succeeded" || job.type !== "scan" || job.result == null) return null;
+  const r = job.result as Partial<ScanJobResult>;
+  return typeof r.message === "string" ? r.message : null;
+}
+
+/** YYYY-MM-DD, optional time (HH:mm or HH:mm:ss), or ISO; missing → sort last */
+function parseAppDate(s: string): number | null {
+  if (!s || s.trim() === "" || s === "—") return null;
+  const t = s.trim();
+  let ms = Date.parse(t);
+  if (Number.isNaN(ms) && /^\d{4}-\d{2}-\d{2}$/.test(t)) {
+    ms = Date.parse(`${t}T12:00:00`);
+  }
+  return Number.isNaN(ms) ? null : ms;
+}
+
+/** Report # as integer; missing / non-numeric → sort last */
+function parseReportNumber(s: string): number | null {
+  if (!s || s.trim() === "" || s === "—") return null;
+  const n = parseInt(s.replace(/\D/g, ""), 10);
+  return Number.isNaN(n) ? null : n;
+}
+
 export function App() {
   const [view, setView] = useState<View>("pipeline");
   const [apps, setApps] = useState<CareerApplication[]>([]);
@@ -43,6 +67,9 @@ export function App() {
   const [q, setQ] = useState("");
   const [activeStatus, setActiveStatus] = useState<string>("all");
   const [scoreSort, setScoreSort] = useState<"none" | "asc" | "desc">("none");
+  /** Default: most recent first (same calendar day → higher report # first). */
+  const [dateSort, setDateSort] = useState<"none" | "asc" | "desc">("desc");
+  const [numSort, setNumSort] = useState<"none" | "asc" | "desc">("none");
 
   const [reportPath, setReportPath] = useState<string | null>(null);
   const [reportMd, setReportMd] = useState<string>("");
@@ -97,11 +124,39 @@ export function App() {
         (a.notes || "").toLowerCase().includes(qq)
       );
     });
-    if (scoreSort !== "none") {
-      result.sort((a, b) => scoreSort === "desc" ? b.score - a.score : a.score - b.score);
+    if (numSort !== "none") {
+      result.sort((a, b) => {
+        const na = parseReportNumber(a.reportNumber);
+        const nb = parseReportNumber(b.reportNumber);
+        if (na === null && nb === null) return 0;
+        if (na === null) return 1;
+        if (nb === null) return -1;
+        return numSort === "desc" ? nb - na : na - nb;
+      });
+    } else if (dateSort !== "none") {
+      result.sort((a, b) => {
+        const ta = parseAppDate(a.date);
+        const tb = parseAppDate(b.date);
+        let cmp = 0;
+        if (ta === null && tb === null) cmp = 0;
+        else if (ta === null) cmp = 1;
+        else if (tb === null) cmp = -1;
+        else cmp = dateSort === "desc" ? tb - ta : ta - tb;
+        if (cmp !== 0) return cmp;
+        const na = parseReportNumber(a.reportNumber);
+        const nb = parseReportNumber(b.reportNumber);
+        if (na === null && nb === null) return 0;
+        if (na === null) return 1;
+        if (nb === null) return -1;
+        return dateSort === "desc" ? nb - na : na - nb;
+      });
+    } else if (scoreSort !== "none") {
+      result.sort((a, b) => (scoreSort === "desc" ? b.score - a.score : a.score - b.score));
     }
     return result;
-  }, [apps, q, activeStatus, scoreSort]);
+  }, [apps, q, activeStatus, scoreSort, dateSort, numSort]);
+
+  const scanJobSummaryMessage = scanResultMessage(job);
 
   async function openReport(app: CareerApplication) {
     if (!app.reportPath) return;
@@ -191,6 +246,9 @@ export function App() {
                     </button>
                     <InfoTip>
                       <div className="font-semibold text-zinc-100 mb-1.5">Scan job portals</div>
+                      <div className="mb-2 text-amber-200/90">
+                        The table above is your evaluation tracker (<span className="font-mono text-cyan-400">applications.md</span>). Scan adds new roles to <span className="font-mono text-cyan-400">data/pipeline.md</span> (Pending) — they appear here only after you run Process pipeline or merge tracker entries.
+                      </div>
                       <div className="mb-2">Opens a headless browser and visits every company careers page listed in <span className="font-mono text-cyan-400">portals.yml</span>. Scrapes all job links, filters them against your title keywords, and deduplicates against previously seen URLs.</div>
                       <div className="grid gap-1.5 text-[11px]">
                         <div><span className="font-medium text-zinc-100">Reads:</span> portals.yml, data/scan-history.tsv, data/pipeline.md</div>
@@ -259,12 +317,55 @@ export function App() {
                 <table className="w-full text-left text-sm">
                   <thead className="bg-zinc-950/40 text-zinc-300">
                     <tr>
-                      <Th>#</Th>
-                      <Th>Date</Th>
+                      <th
+                        onClick={() => {
+                          setNumSort((s) => {
+                            const next = s === "none" ? "desc" : s === "desc" ? "asc" : "none";
+                            if (next !== "none") {
+                              setDateSort("none");
+                              setScoreSort("none");
+                            }
+                            return next;
+                          });
+                        }}
+                        className="px-4 py-3 text-xs font-semibold uppercase tracking-wide cursor-pointer select-none hover:text-zinc-100 transition"
+                      >
+                        #{" "}
+                        <span className="text-zinc-500">
+                          {numSort === "desc" ? "↓" : numSort === "asc" ? "↑" : "⇅"}
+                        </span>
+                      </th>
+                      <th
+                        onClick={() => {
+                          setDateSort((s) => {
+                            const next = s === "none" ? "desc" : s === "desc" ? "asc" : "none";
+                            if (next !== "none") {
+                              setScoreSort("none");
+                              setNumSort("none");
+                            }
+                            return next;
+                          });
+                        }}
+                        className="px-4 py-3 text-xs font-semibold uppercase tracking-wide cursor-pointer select-none hover:text-zinc-100 transition"
+                      >
+                        Date{" "}
+                        <span className="text-zinc-500">
+                          {dateSort === "desc" ? "↓" : dateSort === "asc" ? "↑" : "⇅"}
+                        </span>
+                      </th>
                       <Th>Company</Th>
                       <Th>Role</Th>
                       <th
-                        onClick={() => setScoreSort((s) => s === "none" ? "desc" : s === "desc" ? "asc" : "none")}
+                        onClick={() => {
+                          setScoreSort((s) => {
+                            const next = s === "none" ? "desc" : s === "desc" ? "asc" : "none";
+                            if (next !== "none") {
+                              setDateSort("none");
+                              setNumSort("none");
+                            }
+                            return next;
+                          });
+                        }}
                         className="px-4 py-3 text-xs font-semibold uppercase tracking-wide cursor-pointer select-none hover:text-zinc-100 transition"
                       >
                         Score{" "}
@@ -420,6 +521,9 @@ export function App() {
                   {job?.progress?.step || "Waiting…"}
                   {job?.progress?.detail && <span className="ml-2 text-xs text-zinc-400">{job.progress.detail}</span>}
                 </div>
+                {scanJobSummaryMessage && (
+                  <div className="mt-1 text-sm text-emerald-200/95">{scanJobSummaryMessage}</div>
+                )}
                 {job?.error && <div className="mt-1 text-xs text-rose-300">{job.error}</div>}
               </div>
 

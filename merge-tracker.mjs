@@ -4,6 +4,7 @@
  *
  * Handles multiple TSV formats:
  * - 9-col: num\tdate\tcompany\trole\tstatus\tscore\tpdf\treport\tnotes
+ *   (date may be YYYY-MM-DD or YYYY-MM-DD HH:mm for ordering)
  * - 8-col: num\tdate\tcompany\trole\tstatus\tscore\tpdf\treport (no notes)
  * - Pipe-delimited (markdown table row): | col | col | ... |
  *

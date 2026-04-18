@@ -13,6 +13,13 @@ function todayYmd() {
   return new Date().toISOString().slice(0, 10);
 }
 
+/** Local YYYY-MM-DD HH:mm for tracker / applications.md (ordering within same day). */
+function nowTrackerDateTime() {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 async function ensureDir(dir: string) {
   await fs.mkdir(dir, { recursive: true });
 }
@@ -191,6 +198,7 @@ export async function runEvaluateJob(
 
   const num = await nextReportNumber();
   const ymd = todayYmd();
+  const trackerWhen = nowTrackerDateTime();
   const { company, role } = extractCompanyAndRoleFromReport(reportMd);
   const slug = slugifyCompany(company) || "company";
   const reportFilename = `${num}-${slug}-${ymd}.md`;
@@ -209,7 +217,7 @@ export async function runEvaluateJob(
   const status = "Evaluated";
   const pdfEmoji = "❌";
   const notes = "Web dashboard evaluation";
-  const tsvLine = [num, ymd, company, role, status, score, pdfEmoji, `[${num}](${reportRel})`, notes].join("\t");
+  const tsvLine = [num, trackerWhen, company, role, status, score, pdfEmoji, `[${num}](${reportRel})`, notes].join("\t");
   await fs.writeFile(tsvPath, tsvLine, "utf-8");
 
   ctx.setProgress("Merging tracker");

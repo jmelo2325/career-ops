@@ -1,104 +1,98 @@
-# Modo: pdf — Generación de PDF ATS-Optimizado
+# Mode: pdf — Infographic-style, ATS-safe tailored CV generation
 
-## Pipeline completo
+## Design philosophy
 
-1. Lee `cv.md` como fuentes de verdad
-2. Pide al usuario el JD si no está en contexto (texto o URL)
-3. Extrae 15-20 keywords del JD
-4. Detecta idioma del JD → idioma del CV (EN default)
-5. Detecta ubicación empresa → formato papel:
-   - US/Canada → `letter`
-   - Resto del mundo → `a4`
-6. Detecta arquetipo del rol → adapta framing
-7. Reescribe Professional Summary inyectando keywords del JD + exit narrative bridge ("Built and sold a business. Now applying systems thinking to [domain del JD].")
-8. Selecciona top 3-4 proyectos más relevantes para la oferta
-9. Reordena bullets de experiencia por relevancia al JD
-10. Construye competency grid desde requisitos del JD (6-8 keyword phrases)
-11. Inyecta keywords naturalmente en logros existentes (NUNCA inventa)
-12. Genera HTML completo desde template + contenido personalizado
-13. Escribe HTML a `/tmp/cv-candidate-{company}.html`
-14. Ejecuta: `node generate-pdf.mjs /tmp/cv-candidate-{company}.html output/cv-candidate-{company}-{YYYY-MM-DD}.pdf --format={letter|a4}`
-15. Reporta: ruta del PDF, nº páginas, % cobertura de keywords
+The PDF template is inspired by a premium two-column magazine/infographic resume layout — **not** a generic single-column markdown-export-looking CV. It should read like a designed document that a recruiter receives from a senior candidate who cares.
 
-## Reglas ATS (parseo limpio)
+**But**: every design choice must preserve ATS (applicant tracking system) parseability.
 
-- Layout single-column (sin sidebars, sin columnas paralelas)
-- Headers estándar: "Professional Summary", "Work Experience", "Education", "Skills", "Certifications", "Projects"
-- Sin texto en imágenes/SVGs
-- Sin info crítica en headers/footers del PDF (ATS los ignora)
-- UTF-8, texto seleccionable (no rasterizado)
-- Sin tablas anidadas
-- Keywords del JD distribuidas: Summary (top 5), primer bullet de cada rol, Skills section
+### Visual identity (what distinguishes this template)
 
-## Diseño del PDF — Editorial / Magazine style
+- **Two-column layout** — main column (65%): Executive Profile → Core Competencies → **Tools & Skills** → **Education** → **Certifications** → **Experience** → Projects. Education sits before the long experience block so it typically fits on page 1. Sidebar (35%): Most Proud Of, Strengths, Methodologies, Life Philosophy, A Day in the Life (floats right; supplementary only).
+- **Dynamic brand colors per target company** — the entire palette (`--brand`, `--accent`) shifts to match the company's real brand identity (Salesforce blue, HubSpot coral, Anthropic rust, etc.).
+- **Typography rhythm** — Space Grotesk (uppercase, 700) for name and section headers, DM Sans (regular/medium) for body. Italic accent-colored tagline under name.
+- **Accent-ruled section headers** — all-caps, letter-spaced, underlined with a 1.5px accent rule (magazine feel, not blog feel).
+- **Iconography** — small inline SVGs for contact row (envelope, linkedin monogram, pin, phone) and "Most Proud Of" cards (lightbulb, rocket, trophy, star). Icons are decoration; every value still has plain-text.
+- **Methodology proficiency dots** — `●●●○` Unicode characters inline with the framework name, so ATS reads them as text.
+- **Tinted sidebar background** — subtle wash of `--brand` at ~4% opacity so the sidebar feels like a card without adding weight.
 
-The template uses CSS custom properties `--brand` and `--accent` that shift the entire color palette per company.
+### ATS-safety rules (non-negotiable)
 
-- **Fonts**: Space Grotesk (headings, 600-700) + DM Sans (body, 400-500)
-- **Fonts self-hosted**: `fonts/`
-- **Header**: full-width brand-colored banner (`--brand` background, white text), candidate name in Space Grotesk 28px bold. Below: contact strip with accent-colored underline (3px `--accent`).
-- **Section titles**: Space Grotesk 11px, uppercase, letter-spacing 0.12em, `--accent` color, preceded by a short 16px decorative dash in `--accent`. No full-width underline.
-- **Body**: DM Sans 10.5px, line-height 1.55
-- **Company names**: `--accent` color, Space Grotesk 11.5px semibold
-- **Experience blocks**: 2px left border in `--accent` (35% opacity) with a small accent dot — creates a timeline feel
-- **Competency pills**: rounded, brand-tinted background with brand-colored text
-- **Margins**: 0.6in
-- **Background**: white
+- **Semantic DOM order**: header → sidebar (supplementary) → main column (summary → competencies → tools/skills → education → certifications → experience → projects). Main holds all keyword-critical sections; sidebar is optional flavor.
+- **Standard section names**: "Executive Profile" / "Experience" / "Education" / "Certifications" / "Tools & Skills" — parsers look for these tokens.
+- **No text inside images or SVGs**. Icons are decorative only.
+- **No photos on the ATS version**. Photos hurt parsing and introduce bias in US-based applications.
+- **No tables** for layout. Use CSS grid / flex only.
+- **Selectable text everywhere** (not rasterized).
+- **No critical info in page header/footer regions** — ATS ignores those.
+- **Keywords from the JD distributed**: Summary (top 5–7), first bullet of each role, Competencies grid, Strengths, Methodologies, Skills.
 
-### Dynamic brand colors
+## Dynamic sections
 
-The LLM must return `brandPrimary` and `brandAccent` (hex `#RRGGBB`) matching the target company's real brand palette. These are injected as `--brand` and `--accent` CSS custom properties. Every structural color in the template references these variables, so the entire CV shifts to match the company.
+The LLM can populate these optional sections or omit them. When omitted they are hidden via `display: none` so the layout stays clean.
 
-## Orden de secciones (optimizado "6-second recruiter scan")
+- `mostProudOf` — 3 career-defining achievements, each with a 1–3 word title + one-sentence description. Title examples: Ingenuity, Growth, Expertise, Leadership, Impact, Craft.
+- `strengths` — 5–7 short (2–5 word) phrases describing persistent strengths.
+- `methodologies` — 3–5 frameworks/methodologies relevant to the role, with a proficiency level 1–4. Rendered as `FRAMEWORK ●●●○`.
+- `lifePhilosophy` — a short quote + author. **Only populate if the candidate profile includes one** — never fabricate.
+- `dayInTheLife` — 3–5 time-slot + activity pairs. Only populate if the profile suggests distinctive daily rituals — otherwise omit.
 
-1. Header banner (name in white on brand-colored background)
-2. Contact strip (email, linkedin.com/in/..., location)
-3. Professional Summary (3-4 lines, keyword-dense)
-4. Core Competencies (6-8 keyword phrases in rounded pills)
-5. Work Experience (reverse chronological, timeline left border)
-6. Projects (top 3-4 most relevant)
-7. Education & Certifications
-8. Skills (languages + technical)
+## Dynamic brand colors (required)
 
-## Estrategia de keyword injection (ético, basado en verdad)
+On every evaluation the LLM must return:
 
-Ejemplos de reformulación legítima:
-- JD dice "RAG pipelines" y CV dice "LLM workflows with retrieval" → cambiar a "RAG pipeline design and LLM orchestration workflows"
-- JD dice "MLOps" y CV dice "observability, evals, error handling" → cambiar a "MLOps and observability: evals, error handling, cost monitoring"
-- JD dice "stakeholder management" y CV dice "collaborated with team" → cambiar a "stakeholder management across engineering, operations, and business"
+- `brandPrimary` — the target company's dominant hex color (e.g. Salesforce `#00A1E0`)
+- `brandAccent` — complementary hex color from the palette (e.g. Salesforce deep navy `#032D60`)
 
-**NUNCA añadir skills que el candidato no tiene. Solo reformular experiencia real con el vocabulario exacto del JD.**
+These flow through the template as `--brand` and `--accent` CSS custom properties. Every structural color references them.
 
-## Template HTML
+If the company cannot be identified from the JD, fall back to `#1a1a2e` / `#2d6a6a`.
 
-Usar el template en `cv-template.html`. Reemplazar los placeholders `{{...}}` con contenido personalizado:
+## Pipeline (runtime flow)
 
-| Placeholder | Contenido |
-|-------------|-----------|
-| `{{LANG}}` | `en` o `es` |
-| `{{PAGE_WIDTH}}` | `8.5in` (letter) o `210mm` (A4) |
-| `{{BRAND_PRIMARY}}` | Hex color matching target company brand (e.g. `#00A1E0`) |
+1. Read `cv.md` (canonical CV), `config/profile.yml` (contact info), `modes/_profile.md` (voice/narrative overrides).
+2. Detect JD language → CV language (EN default).
+3. Detect company → select brand colors.
+4. Detect archetype from JD → adjust framing of summary + experience bullets.
+5. LLM generates JSON with all template fields (see below).
+6. Template is filled and written to `output/_tmp/cv-{num}-{slug}.html`.
+7. Playwright renders PDF with 0.6in margins, letter (US/Canada) or A4 (rest of world).
+8. Output: `output/cv-{slug}-{num}.pdf`.
+
+## Keyword injection (ethical)
+
+Reformulate real experience using the JD's vocabulary. Never invent skills.
+
+- JD says "RAG pipelines" and CV says "LLM workflows with retrieval" → rewrite to "RAG pipeline design and LLM orchestration workflows".
+- JD says "stakeholder management" and CV says "collaborated with team" → rewrite to "stakeholder management across engineering, operations, and business".
+
+## Placeholder reference
+
+| Placeholder | Content |
+|---|---|
+| `{{LANG}}` | `en` or `es` |
+| `{{PAGE_WIDTH}}` | `8.5in` (letter) or `210mm` (A4) |
+| `{{BRAND_PRIMARY}}` | Hex color matching target company brand |
 | `{{BRAND_ACCENT}}` | Complementary hex color from company palette |
-| `{{NAME}}` | (from profile.yml) |
-| `{{EMAIL}}` | (from profile.yml) |
-| `{{LINKEDIN_URL}}` | Full URL (from profile.yml) |
+| `{{NAME}}` | from `config/profile.yml` |
+| `{{TAGLINE}}` | 6–12 word personal brand line |
+| `{{EMAIL}}` / `{{PHONE}}` / `{{LOCATION}}` | from `config/profile.yml` |
+| `{{LINKEDIN_URL}}` | Full URL |
 | `{{LINKEDIN_DISPLAY}}` | Readable path, e.g. `linkedin.com/in/jessmelo` |
-| `{{LOCATION}}` | (from profile.yml) |
-| `{{SECTION_SUMMARY}}` | Professional Summary / Resumen Profesional |
-| `{{SUMMARY_TEXT}}` | Summary personalizado con keywords |
-| `{{SECTION_COMPETENCIES}}` | Core Competencies / Competencias Core |
-| `{{COMPETENCIES}}` | `<span class="competency-tag">keyword</span>` × 6-8 |
-| `{{SECTION_EXPERIENCE}}` | Work Experience / Experiencia Laboral |
-| `{{EXPERIENCE}}` | HTML de cada trabajo con bullets reordenados |
-| `{{SECTION_PROJECTS}}` | Projects / Proyectos |
-| `{{PROJECTS}}` | HTML de top 3-4 proyectos |
-| `{{SECTION_EDUCATION}}` | Education / Formación |
-| `{{EDUCATION}}` | HTML de educación |
-| `{{SECTION_CERTIFICATIONS}}` | Certifications / Certificaciones |
-| `{{CERTIFICATIONS}}` | HTML de certificaciones |
-| `{{SECTION_SKILLS}}` | Skills / Competencias |
-| `{{SKILLS}}` | HTML de skills |
+| `{{SUMMARY_TEXT}}` | 3–5 sentence Executive Profile |
+| `{{COMPETENCIES}}` | `<span class="competency-tag">…</span>` × 6–10 |
+| `{{EXPERIENCE}}` | Reverse-chronological `<div class="job">` blocks |
+| `{{PROJECTS}}` | Optional — `<div class="project">` blocks |
+| `{{EDUCATION}}` | `<div class="edu-item">` blocks |
+| `{{CERTIFICATIONS}}` | Optional — `<div class="cert-item">` blocks |
+| `{{SKILLS}}` | `<div class="skill-item">` blocks |
+| `{{PROUD}}` | Optional — `<div class="proud-item">` blocks (3 cards) |
+| `{{STRENGTHS}}` | Optional — `<li>` list items |
+| `{{METHODOLOGIES}}` | Optional — `<div class="method-item">` with proficiency dots |
+| `{{PHILOSOPHY}}` | Optional — `<blockquote>` + author |
+| `{{DAY_IN_THE_LIFE}}` | Optional — `<div class="day-item">` rows |
+| `{{*_DISPLAY}}` | `block` or `none` — controls visibility of optional sections |
 
-## Post-generación
+## Post-generation
 
-Actualizar tracker si la oferta ya está registrada: cambiar PDF de ❌ a ✅.
+Update the tracker (PDF column from `❌` to `✅`) once the PDF has been successfully written.

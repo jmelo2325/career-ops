@@ -13,6 +13,7 @@ import { updateApplicationStatusByReportNumber } from "./lib/statusUpdate";
 import { enqueueJob, getJob, listJobs } from "./lib/jobQueue";
 import { listReports, readReport } from "./lib/reports";
 import { findPdfForReport, getPdfAbsolutePath, revealPdfInExplorer } from "./lib/pdfLookup";
+import { regeneratePdfForReport } from "./lib/regeneratePdf";
 import { runEvaluateJob } from "./lib/runEvaluateJob";
 import { runNodeScript } from "./lib/scripts";
 import { runScanJob } from "./lib/scan";
@@ -179,6 +180,20 @@ app.get("/api/pdf/serve/:filename", async (req, res) => {
     return;
   }
   res.sendFile(absPath);
+});
+
+app.post("/api/pdf/regenerate", async (req, res) => {
+  const schema = z.object({ reportNum: z.string().min(1) });
+  const parsed = schema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ ok: false, error: parsed.error.flatten() });
+    return;
+  }
+  const job = enqueueJob({
+    type: `regenerate-pdf:${parsed.data.reportNum}`,
+    run: async ({ log, setProgress }) => regeneratePdfForReport(parsed.data.reportNum, { log, setProgress })
+  });
+  res.json({ ok: true, jobId: job.id });
 });
 
 app.post("/api/pdf/reveal", async (req, res) => {

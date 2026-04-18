@@ -146,7 +146,10 @@ Each of **Scan**, **Process pipeline**, and **Merge tracker** has a small **ⓘ*
 
 ### Pipeline table
 
-- **Score** column — click the **Score** header to cycle sort: **unsorted** → **highest first** → **lowest first** → **unsorted** (icons ⇅ / ↓ / ↑).
+- **Default order** — **most recent first** by **Date & time** (column may show `YYYY-MM-DD` or `YYYY-MM-DD HH:mm`). New evaluations from the dashboard write a timestamp so same-day runs sort correctly. Older rows with date-only still order sensibly; same calendar day → higher report **#** first.
+- **#** column — click the **#** header to sort by report number: **unsorted** → **newest/highest # first** → **oldest/lowest # first** → **unsorted** (⇅ / ↓ / ↑). Only one of **#**, **Date & time**, or **Score** sort is active at a time.
+- **Date & time** column — click to cycle: **most recent first** (default) ↔ **oldest first** ↔ **unsorted** (⇅ / ↓ / ↑). Missing values sort last.
+- **Score** column — same cycle for numeric score.
 - **Actions** — **Open JD** (if a URL is stored), **View report** (opens the structured report view).
 
 ### Floating Job Progress Bar
@@ -596,6 +599,15 @@ If port 8787 or 5173 is taken, edit `web/.env` (for the API port) or check the V
 ### "View tailored CV" does not appear
 The button only shows when a file matching `output/cv-*-{###}.pdf` exists for that report’s 3-digit number. If an evaluation failed during the PDF step, regenerate by re-running evaluation for that job or copy a PDF into `output/` with the expected name. Ensure the **API server** can read `output/` (same repo root as `reports/`).
 
+### Regenerate a tailored PDF without re-running the full evaluation
+If the report exists but the PDF is wrong (template bug, bad scrape, missing placeholders), call the API with the report number (no leading zeros required):
+
+```powershell
+Invoke-RestMethod -Uri "http://127.0.0.1:8787/api/pdf/regenerate" -Method Post -Body (@{ reportNum = "016" } | ConvertTo-Json) -ContentType "application/json"
+```
+
+This re-scrapes the JD from `**URL:**` in the report markdown and overwrites `output/cv-<slug>-<num>.pdf` using the current template and `pdf.ts`. The report file is not modified.
+
 ---
 
 ## 14. Feature Reference
@@ -605,10 +617,10 @@ The button only shows when a file matching `output/cv-*-{###}.pdf` exists for th
 | Feature | Original CLI mode | Dashboard equivalent |
 |---------|------------------|---------------------|
 | Evaluate a single offer | `/career-ops {paste URL}` or `oferta` | **Evaluate** tab → paste URL or JD → Start evaluation |
-| Generate tailored PDF | `pdf` | Auto-generated as part of every evaluation |
+| Generate tailored PDF | `pdf` | Auto-generated as part of every evaluation; or `POST /api/pdf/regenerate` to rebuild from an existing report |
 | Scan portals | `scan` | **Scan** button on Pipeline tab |
 | Process pending URLs | `pipeline` | **Process pipeline** button on Pipeline tab |
-| View/filter pipeline | `tracker` / Go TUI dashboard | **Pipeline** tab: search, **Status** filter, **Score** column sort |
+| View/filter pipeline | `tracker` / Go TUI dashboard | **Pipeline** tab: search, **Status** filter, sortable **#** / **Date** / **Score** columns |
 | Update application status | Edit `applications.md` | Status dropdown on each row |
 | View evaluation reports | Open `reports/*.md` | **View report** → structured report view (Pipeline nav stays active; no separate Report tab) |
 | View tailored PDF | Open `output/*.pdf` | **View tailored CV** in report modal + **Show on my computer** / **Download** |
