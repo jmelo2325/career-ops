@@ -40,8 +40,17 @@ export type ScanJobResult = {
   added: number;
   companiesScanned: number;
   greenhouseBoards: number;
+  leverBoards?: number;
   playwrightPages: number;
   failures: Array<{ company: string; error: string }>;
+  diagnostics?: {
+    trackedCompanies: number;
+    apiJobRows: number;
+    playwrightRows: number;
+    filteredPositive: number;
+    filteredNegative: number;
+    duplicateUrl: number;
+  };
   message: string;
 };
 

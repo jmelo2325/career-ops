@@ -1,6 +1,6 @@
 # Jessica Melo
 
-Sales Enablement Executive & Innovative Powerhouse  
+Progressive AI enablement executive & Innovative powerhouse  
 Email: jmelo2325@gmail.com  
 LinkedIn: linkedin.com/in/jessmelo  
 Location: Dallas, TX  
@@ -8,7 +8,7 @@ Phone: 908-947-8577
 
 ## Executive Profile
 
-Top-performing sales strategy and enablement executive with 14+ years in tech sales, including quota-carrying success and leadership of global enablement programs that scale sales learning as a core competitive advantage. Built and led a high-impact sales enablement function from the ground up within a fast-paced S&P 500 technology company, supporting 600+ sales professionals across B2B, Inside Sales, and Client Relations. Direct experience enabling international sales teams in APAC and EMEA. Known for strong business acumen and the ability to synthesize people, process, and technology gaps into measurable sales results through strategic roadmap design and execution. Most recently served as VP of Revenue Enablement at Enable prior to a company-wide reduction in force due to restructuring.
+Progressive **AI enablement executive** blending 14+ years in tech sales and revenue enablement: quota-carrying success plus leadership of global programs that scale **sales learning**, **AI-guided selling motions**, and **GTM readiness** as durable advantages. Built and led a high-impact enablement function from the ground up within a fast-paced S&P 500 technology company, supporting 600+ sales professionals across B2B, Inside Sales, and Client Relations; direct international enablement across APAC and EMEA. Known for translating people, process, and technology gaps into measurable outcomes through roadmap design — including rolling out methodology, digital onboarding, centralized sales tech stacks, and **AI-assisted seller workflows**. Most recently VP of Revenue Enablement at Enable; role ended in a company-wide reduction in force due to restructuring. **Returning to the market following that workforce reduction and maternity leave**, ready to lead progressive enablement agendas that pair organizational rigor with modern AI responsibly.
 
 ## Experience
 
@@ -89,6 +89,13 @@ Sep 2011 – Aug 2013
 - MEDDPICC
 - BANT
 - Command of the Message (CoM)
+
+### Generative AI & workflow tooling
+
+- ChatGPT (advanced workflows / prompt design for seller-facing assets)
+- Cursor (AI-assisted documentation, playbooks, enablement collateral)
+- Claude (long-context analysis & narrative for programs)
+- MCP servers (tool-connected workflows where appropriate)
 
 ### Enablement & Sales Tech (from experience)
 

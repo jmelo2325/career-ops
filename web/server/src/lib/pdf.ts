@@ -106,8 +106,9 @@ export async function generateTailoredPdf(params: {
     "If you cannot identify the company, use #1a1a2e/#2d6a6a.",
     "",
     "CONTENT GUIDELINES:",
-    "- tagline: ONE short personal brand line (6–12 words), e.g. 'Sales Enablement Executive & Innovative Powerhouse'. Match the candidate's voice from their CV.",
-    "- summaryText: 3–5 sentence executive profile, dense with JD keywords, written in 1st-person-implied prose (no 'I').",
+    "- If User overrides (_profile.md) contain a heading like 'Tailored CV / PDF', treat those bullets as mandatory (they supersede conflicting defaults below).",
+    "- tagline: ONE short personal brand line (6–12 words); if _profile mandates a brand (e.g., progressive AI enablement executive), align with it.",
+    '- summaryText: 3–5 sentence executive profile, dense with JD keywords, written in 1st-person-implied prose (no "I"). Closing sentence must obey any explicit ending/placement narrative required in User overrides.',
     "- competencies: 6–10 short keyword phrases from the JD, e.g. 'Revenue Enablement Strategy'.",
     "- mostProudOf: 3 items, each a title (1–3 words) + one-sentence description of a career-defining achievement. Examples of titles: Ingenuity, Growth, Expertise, Leadership, Impact, Craft.",
     "- strengths: 5–7 short strengths/abilities phrases (2–5 words each), e.g. 'Transformative Leadership', 'Consultative Selling'.",
@@ -129,6 +130,7 @@ export async function generateTailoredPdf(params: {
     "",
     "HTML STRUCTURE for skillsHtml:",
     '<div class="skills-grid"><div class="skill-item"><span class="skill-category">Category:</span> item1, item2, item3</div></div>',
+    'Include Modern AI tooling (e.g., ChatGPT, Cursor, Claude, MCP servers) under a labeled category row when CV or overrides list them.',
   ].join("\n");
 
   const user = [
